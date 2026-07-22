@@ -232,6 +232,9 @@ export default function App() {
             setSelectedSeries(null);
             setShowShop(true);
           }}
+        />
+      )}
+
       {/* Email Confirmed Celebration Modal */}
       {showEmailConfirmedModal && (
         <div style={{
