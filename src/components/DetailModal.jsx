@@ -373,8 +373,10 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                       width: '100%',
                       height: '100%'
                     }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen *; display-capture"
+                    allowFullScreen={true}
+                    webkitallowfullscreen="true"
+                    mozallowfullscreen="true"
                   />
                 ) : isGoogleDrive ? (
                   /* Google Drive Player — two phases: init (let Drive start) → ready (our controls) */
