@@ -361,23 +361,62 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                 }}
               >
                 {isBunnyStream ? (
-                  /* 100% Native Bunny Stream Player (Uses all configurations from Bunny.net Dashboard) */
-                  <iframe
-                    src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${cleanVideoId}?autoplay=true&loop=false&muted=false&preload=true`}
-                    loading="lazy"
-                    style={{
-                      border: 'none',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%'
-                    }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen *; display-capture"
-                    allowFullScreen={true}
-                    webkitallowfullscreen="true"
-                    mozallowfullscreen="true"
-                  />
+                  /* 100% Native Bunny Stream Player + Native Fullscreen Trigger Button */
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                    <iframe
+                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${cleanVideoId}?autoplay=true&loop=false&muted=false&preload=true`}
+                      loading="lazy"
+                      style={{
+                        border: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%'
+                      }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen *; display-capture"
+                      allowFullScreen={true}
+                      webkitallowfullscreen="true"
+                      mozallowfullscreen="true"
+                    />
+
+                    {/* Floating Native Fullscreen Toggle Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isFullscreen) {
+                          exitFullscreen();
+                        } else {
+                          handleFullscreen();
+                        }
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        zIndex: 50,
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        border: '1px solid rgba(255, 255, 255, 0.3)',
+                        color: '#fff',
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontWeight: 'bold',
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+                        opacity: showControls ? 1 : 0,
+                        transition: 'opacity 0.4s ease'
+                      }}
+                      title={isFullscreen ? "Sair da Tela Cheia" : "Expandir Tela Cheia"}
+                    >
+                      {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                      <span>{isFullscreen ? 'Sair' : 'Tela Cheia'}</span>
+                    </button>
+                  </div>
                 ) : isGoogleDrive ? (
                   /* Google Drive Player — two phases: init (let Drive start) → ready (our controls) */
                   <>
