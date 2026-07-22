@@ -361,23 +361,50 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                 }}
               >
                 {isBunnyStream ? (
-                  /* 100% Native Bunny Stream Player (Clean, with native fullscreen enabled) */
-                  <iframe
-                    src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${cleanVideoId}?autoplay=true&loop=false&muted=false&preload=true`}
-                    loading="lazy"
-                    style={{
-                      border: 'none',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%'
-                    }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen *; display-capture"
-                    allowFullScreen={true}
-                    webkitallowfullscreen="true"
-                    mozallowfullscreen="true"
-                  />
+                  /* 100% Native Bunny Stream Player with Invisible Helper Trigger Outside Screen */
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                    <iframe
+                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${cleanVideoId}?autoplay=true&loop=false&muted=false&preload=true`}
+                      loading="lazy"
+                      style={{
+                        border: 'none',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%'
+                      }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen *; display-capture"
+                      allowFullScreen={true}
+                      webkitallowfullscreen="true"
+                      mozallowfullscreen="true"
+                    />
+
+                    {/* Hidden Fullscreen Helper Trigger (Invisible & Outside Screen) */}
+                    <button
+                      id="bunny-hidden-fullscreen-trigger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isFullscreen) {
+                          exitFullscreen();
+                        } else {
+                          handleFullscreen();
+                        }
+                      }}
+                      style={{
+                        position: 'absolute',
+                        left: '-9999px',
+                        top: '-9999px',
+                        width: '1px',
+                        height: '1px',
+                        opacity: 0,
+                        pointerEvents: 'none',
+                        visibility: 'hidden'
+                      }}
+                      aria-hidden="true"
+                      tabIndex="-1"
+                    />
+                  </div>
                 ) : isGoogleDrive ? (
                   /* Google Drive Player — two phases: init (let Drive start) → ready (our controls) */
                   <>
