@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Plus, Trash, Film, Tv, Video, ArrowLeft, BarChart3, Users, Landmark, PlayCircle, Image, Sparkles, FolderOpen, List, Search } from 'lucide-react';
+import { Plus, Trash, Film, Tv, Video, ArrowLeft, BarChart3, Users, Landmark, PlayCircle, Image, Sparkles, FolderOpen, List, Search, Edit3 } from 'lucide-react';
 
 const SUGGESTED_COVERS = [
   { name: 'Tokyo Neon', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&auto=format&fit=crop&q=80' },
@@ -12,7 +12,7 @@ const SUGGESTED_COVERS = [
 ];
 
 export default function AdminDashboard({ onClose }) {
-  const { catalog, addSeries, deleteSeries, addEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason } = useContext(AppContext);
+  const { catalog, addSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('content'); // 'content' | 'categories' | 'metrics'
   const [contentSubTab, setContentSubTab] = useState('list'); // 'list' | 'add'
   const [selectedSeriesId, setSelectedSeriesId] = useState(null);
@@ -32,6 +32,13 @@ export default function AdminDashboard({ onClose }) {
   // Season selector for editing episodes
   const [selectedSeason, setSelectedSeason] = useState(1);
 
+  // New/Edit episode state
+  const [editingEpisodeId, setEditingEpisodeId] = useState(null);
+  const [newEpTitle, setNewEpTitle] = useState('');
+  const [newEpNumber, setNewEpNumber] = useState('');
+  const [newEpYoutubeUrl, setNewEpYoutubeUrl] = useState('');
+  const [newEpThumbnail, setNewEpThumbnail] = useState('');
+
   // Keep chosen category synchronized with available categories in DB
   useEffect(() => {
     if (categories && categories.length > 0 && !categories.includes(newSeriesCategory)) {
@@ -42,13 +49,11 @@ export default function AdminDashboard({ onClose }) {
   // Reset selected season when series changes
   useEffect(() => {
     setSelectedSeason(1);
+    setEditingEpisodeId(null);
+    setNewEpTitle('');
+    setNewEpNumber('');
+    setNewEpYoutubeUrl('');
   }, [selectedSeriesId]);
-
-  // New episode state
-  const [newEpTitle, setNewEpTitle] = useState('');
-  const [newEpNumber, setNewEpNumber] = useState('');
-  const [newEpYoutubeUrl, setNewEpYoutubeUrl] = useState('');
-  const [newEpThumbnail, setNewEpThumbnail] = useState('');
 
   // Calculations for Metrics Dashboard
   const totalUsers = users.length;
@@ -127,19 +132,30 @@ export default function AdminDashboard({ onClose }) {
     const youtubeId = extractYoutubeId(newEpYoutubeUrl);
     const thumbUrl = newEpThumbnail || 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=400&auto=format&fit=crop&q=80';
 
-    addEpisode(selectedSeriesId, {
-      title: newEpTitle,
-      number: selectedSeries.type === 'Filme' ? 1 : parseInt(newEpNumber, 10),
-      youtubeId,
-      thumbnail: thumbUrl,
-      season: selectedSeries.type === 'Filme' ? 1 : selectedSeason
-    });
+    if (editingEpisodeId) {
+      editEpisode(selectedSeriesId, editingEpisodeId, {
+        title: newEpTitle,
+        number: selectedSeries.type === 'Filme' ? 1 : parseInt(newEpNumber, 10),
+        youtubeId,
+        thumbnail: thumbUrl,
+        season: selectedSeries.type === 'Filme' ? 1 : selectedSeason
+      });
+      setEditingEpisodeId(null);
+    } else {
+      addEpisode(selectedSeriesId, {
+        title: newEpTitle,
+        number: selectedSeries.type === 'Filme' ? 1 : parseInt(newEpNumber, 10),
+        youtubeId,
+        thumbnail: thumbUrl,
+        season: selectedSeries.type === 'Filme' ? 1 : selectedSeason
+      });
+    }
 
     setNewEpTitle('');
     setNewEpNumber('');
     setNewEpYoutubeUrl('');
     setNewEpThumbnail('');
-    alert(selectedSeries.type === 'Filme' ? 'Vídeo do filme cadastrado!' : 'Episódio adicionado com sucesso!');
+    alert(editingEpisodeId ? 'Episódio editado com sucesso!' : (selectedSeries.type === 'Filme' ? 'Vídeo do filme cadastrado!' : 'Episódio adicionado com sucesso!'));
   };
 
   const selectedSeries = catalog.find(s => s.id === selectedSeriesId);
@@ -825,19 +841,43 @@ export default function AdminDashboard({ onClose }) {
                               )}
                               <span style={{ fontSize: '0.9rem' }}>{ep.title}</span>
                             </div>
-                            <button
-                              onClick={() => deleteEpisode(selectedSeriesId, ep.id)}
-                              style={{
-                                padding: '6px',
-                                background: 'rgba(255, 0, 85, 0.1)',
-                                border: '1px solid var(--color-danger)',
-                                borderRadius: '4px',
-                                cursor: 'pointer',
-                                color: 'var(--color-danger)'
-                              }}
-                            >
-                              <Trash size={14} />
-                            </button>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingEpisodeId(ep.id);
+                                  setNewEpTitle(ep.title);
+                                  setNewEpNumber(ep.number);
+                                  setNewEpYoutubeUrl(ep.youtubeId || '');
+                                }}
+                                style={{
+                                  padding: '6px',
+                                  background: 'rgba(0, 240, 255, 0.1)',
+                                  border: '1px solid var(--color-neon-cyan)',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  color: 'var(--color-neon-cyan)'
+                                }}
+                                title="Editar Episódio"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteEpisode(selectedSeriesId, ep.id)}
+                                style={{
+                                  padding: '6px',
+                                  background: 'rgba(255, 0, 85, 0.1)',
+                                  border: '1px solid var(--color-danger)',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  color: 'var(--color-danger)'
+                                }}
+                                title="Excluir Episódio"
+                              >
+                                <Trash size={14} />
+                              </button>
+                            </div>
                           </div>
                         ))
                     ) : (

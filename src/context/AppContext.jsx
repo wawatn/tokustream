@@ -422,6 +422,57 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const editEpisode = async (seriesId, episodeId, updatedEpisode) => {
+    setCatalog(prev => prev.map(s => {
+      if (s.id === seriesId) {
+        return {
+          ...s,
+          episodes: (s.episodes || []).map(ep => 
+            ep.id === episodeId
+              ? {
+                  ...ep,
+                  title: updatedEpisode.title,
+                  number: parseInt(updatedEpisode.number, 10) || ep.number,
+                  youtubeId: updatedEpisode.youtubeId,
+                  season: updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : (ep.season || 1)
+                }
+              : ep
+          )
+        };
+      }
+      return s;
+    }));
+
+    try {
+      await supabase.from('episodes').update({
+        season_number: updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : 1,
+        episode_number: parseInt(updatedEpisode.number, 10) || 1,
+        title: updatedEpisode.title,
+        video_id: updatedEpisode.youtubeId
+      }).eq('id', episodeId);
+      fetchCatalogFromSupabase();
+    } catch (err) {
+      console.error('Erro ao editar episódio no Supabase:', err);
+    }
+  };
+
+  const deleteEpisode = async (seriesId, episodeId) => {
+    setCatalog(prev => prev.map(s => {
+      if (s.id === seriesId) {
+        return {
+          ...s,
+          episodes: (s.episodes || []).filter(ep => ep.id !== episodeId)
+        };
+      }
+      return s;
+    }));
+
+    try {
+      await supabase.from('episodes').delete().eq('id', episodeId);
+      fetchCatalogFromSupabase();
+    } catch (err) {}
+  };
+
   const addSeason = (seriesId) => {
     setCatalog(catalog.map(s => {
       if (s.id === seriesId) {
@@ -436,17 +487,7 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
-  const deleteEpisode = (seriesId, episodeId) => {
-    setCatalog(catalog.map(s => {
-      if (s.id === seriesId) {
-        return {
-          ...s,
-          episodes: s.episodes.filter(e => e.id !== episodeId)
-        };
-      }
-      return s;
-    }));
-  };
+
 
   const addDbCategory = (newCat) => {
     if (newCat && !dbCategories.includes(newCat)) {
@@ -479,6 +520,7 @@ export const AppProvider = ({ children }) => {
       addSeries,
       deleteSeries,
       addEpisode,
+      editEpisode,
       deleteEpisode,
       myList: currentUser ? (myList[currentUser.username] || []) : [],
       toggleFavorite,
