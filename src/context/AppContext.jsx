@@ -88,13 +88,59 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
+  // Load catalog and episodes from Supabase Cloud DB
+  const fetchCatalogFromSupabase = async () => {
+    try {
+      const { data: catData, error: catError } = await supabase
+        .from('catalog')
+        .select('*');
+
+      if (!catError && catData && catData.length > 0) {
+        const { data: epData } = await supabase
+          .from('episodes')
+          .select('*');
+
+        const formattedCatalog = catData.map(item => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          category: item.category,
+          cover: item.cover_url,
+          cover_url: item.cover_url,
+          trailerYoutubeId: item.trailer_url || 'YtD5-Ynfe3Y',
+          type: item.type || 'Série',
+          year: item.year || '2026',
+          rating: item.rating || '9.5',
+          seasons: [1, 2, 3],
+          episodes: (epData || [])
+            .filter(ep => ep.catalog_id === item.id)
+            .map(ep => ({
+              id: ep.id,
+              number: ep.episode_number,
+              title: ep.title,
+              youtubeId: ep.video_id,
+              season: ep.season_number || 1
+            }))
+        }));
+
+        setCatalog(formattedCatalog);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar catálogo no Supabase:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCatalogFromSupabase();
+  }, []);
+
   // Connect to local database server via Vite proxy as fallback
   useEffect(() => {
     fetch('/api/db')
       .then(res => res.json())
       .then(data => {
-        if (data && data.catalog) {
-          setCatalog(data.catalog);
+        if (data && data.catalog && data.catalog.length > 0) {
+          setCatalog(prev => prev.length > 0 ? prev : data.catalog);
           if (data.users && data.users.length > 0) setUsers(data.users);
           if (data.categories && data.categories.length > 0) setDbCategories(data.categories);
           if (data.unlockedEpisodes) setUnlockedEpisodes(data.unlockedEpisodes);
@@ -158,7 +204,6 @@ export const AppProvider = ({ children }) => {
 
       return { success: true, message: 'Conta criada com sucesso!' };
     } catch (err) {
-      // Local fallback for dev/testing
       const newUser = { username, password, email, isAdmin: false, credits: 0 };
       setUsers(prev => [...prev, newUser]);
       setCurrentUser(newUser);
@@ -167,7 +212,6 @@ export const AppProvider = ({ children }) => {
   };
 
   const loginUser = async (email, password) => {
-    // Admin local shortcut fallback
     if (email === 'admin' || email === 'admin@tokustream.com') {
       const adminUser = users.find(u => u.username === 'admin' && u.password === password);
       if (adminUser) {
@@ -191,7 +235,6 @@ export const AppProvider = ({ children }) => {
 
       return { success: true };
     } catch (err) {
-      // Local fallback for dev
       const user = users.find(u => (u.email === email || u.username === email) && u.password === password);
       if (user) {
         setCurrentUser(user);
@@ -305,31 +348,56 @@ export const AppProvider = ({ children }) => {
     return userProgress[episodeId] || 0;
   };
 
-  const addSeries = (series) => {
+  const addSeries = async (series) => {
     const safeId = `${series.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`;
     const newSeries = {
       ...series,
       id: safeId,
+      cover: series.cover || series.cover_url,
       type: series.type || 'Série',
       seasons: series.type === 'Série' ? [1] : [],
       trailerYoutubeId: series.trailerYoutubeId || 'YtD5-Ynfe3Y',
       episodes: []
     };
-    setCatalog([...catalog, newSeries]);
+
+    setCatalog(prev => [newSeries, ...prev]);
+
+    // Insert into Supabase catalog table
+    try {
+      await supabase.from('catalog').insert({
+        title: series.title,
+        description: series.description,
+        category: series.category,
+        cover_url: series.cover || series.cover_url,
+        trailer_url: series.trailerYoutubeId,
+        type: series.type || 'Série',
+        year: series.year || '2026',
+        rating: series.rating || '9.5'
+      });
+      fetchCatalogFromSupabase();
+    } catch (err) {
+      console.error('Erro ao salvar no Supabase:', err);
+    }
+
     return safeId;
   };
 
-  const deleteSeries = (seriesId) => {
-    setCatalog(catalog.filter(s => s.id !== seriesId));
+  const deleteSeries = async (seriesId) => {
+    setCatalog(prev => prev.filter(s => s.id !== seriesId));
+    try {
+      await supabase.from('catalog').delete().eq('id', seriesId);
+      fetchCatalogFromSupabase();
+    } catch (err) {}
   };
 
-  const addEpisode = (seriesId, episode) => {
+  const addEpisode = async (seriesId, episode) => {
     const newEpisode = {
       ...episode,
       id: `${seriesId}-ep-${Date.now()}`,
       season: episode.season ? parseInt(episode.season, 10) : 1
     };
-    setCatalog(catalog.map(s => {
+
+    setCatalog(prev => prev.map(s => {
       if (s.id === seriesId) {
         return {
           ...s,
@@ -338,6 +406,20 @@ export const AppProvider = ({ children }) => {
       }
       return s;
     }));
+
+    // Insert into Supabase episodes table
+    try {
+      await supabase.from('episodes').insert({
+        catalog_id: seriesId,
+        season_number: episode.season ? parseInt(episode.season, 10) : 1,
+        episode_number: parseInt(episode.number, 10) || 1,
+        title: episode.title || `Episódio ${episode.number}`,
+        video_id: episode.youtubeId || episode.video_id
+      });
+      fetchCatalogFromSupabase();
+    } catch (err) {
+      console.error('Erro ao salvar episódio no Supabase:', err);
+    }
   };
 
   const addSeason = (seriesId) => {
