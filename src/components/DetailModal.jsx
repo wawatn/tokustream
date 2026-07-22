@@ -331,9 +331,22 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
         {activeEpisode && isEpisodeUnlocked(activeEpisode.id) ? (
           (() => {
             const bunnyLibraryId = import.meta.env.VITE_BUNNY_LIBRARY_ID || '711399';
-            const rawId = activeEpisode.youtubeId || '';
-            const isBunnyStream = rawId.length === 36 || rawId.includes('-') || activeEpisode.isBunny;
-            const isGoogleDrive = !isBunnyStream && rawId.length > 15;
+            const rawId = (activeEpisode.youtubeId || '').trim();
+
+            const isGoogleDriveUrl = rawId.includes('drive.google.com') || rawId.includes('/file/d/');
+            const isYouTubeUrl = rawId.includes('youtube.com') || rawId.includes('youtu.be');
+
+            let cleanVideoId = rawId;
+            if (isGoogleDriveUrl) {
+              const match = rawId.match(/\/file\/d\/([^\/]+)/);
+              if (match && match[1]) cleanVideoId = match[1];
+            } else if (isYouTubeUrl) {
+              const match = rawId.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+              if (match && match[1]) cleanVideoId = match[1];
+            }
+
+            const isBunnyStream = !isGoogleDriveUrl && !isYouTubeUrl && (cleanVideoId.length === 36 || (cleanVideoId.includes('-') && cleanVideoId.length > 20) || activeEpisode.isBunny);
+            const isGoogleDrive = isGoogleDriveUrl || (!isBunnyStream && !isYouTubeUrl && cleanVideoId.length > 15);
 
             return (
               <div 
@@ -351,7 +364,7 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                   /* Bunny Stream Premium HTML5 Player */
                   <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
                     <iframe
-                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${rawId}?autoplay=true&loop=false&muted=false&preload=true`}
+                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${cleanVideoId}?autoplay=true&loop=false&muted=false&preload=true`}
                       loading="lazy"
                       style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                       allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
@@ -412,7 +425,7 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                     <div className="gdrive-player-crop">
                       <iframe
                         ref={gdriveIframeRef}
-                        src={`https://drive.google.com/file/d/${activeEpisode.youtubeId}/preview`}
+                        src={`https://drive.google.com/file/d/${cleanVideoId}/preview`}
                         className="gdrive-iframe"
                         style={{
                           width: '100%',
@@ -1054,8 +1067,9 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                             background: '#1a1a1a'
                           }}>
                             <img 
-                              src={ep.thumbnail} 
+                              src={ep.thumbnail || item.cover} 
                               alt={ep.title}
+                              onError={(e) => { e.target.src = item.cover; }}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                             <div style={{
