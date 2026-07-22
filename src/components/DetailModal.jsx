@@ -330,7 +330,10 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
         {/* Player Section with Custom Controls Overlay */}
         {activeEpisode && isEpisodeUnlocked(activeEpisode.id) ? (
           (() => {
-            const isGoogleDrive = activeEpisode.youtubeId && activeEpisode.youtubeId.length > 15;
+            const bunnyLibraryId = import.meta.env.VITE_BUNNY_LIBRARY_ID || '711399';
+            const rawId = activeEpisode.youtubeId || '';
+            const isBunnyStream = rawId.length === 36 || rawId.includes('-') || activeEpisode.isBunny;
+            const isGoogleDrive = !isBunnyStream && rawId.length > 15;
 
             return (
               <div 
@@ -344,7 +347,65 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                   overflow: 'hidden'
                 }}
               >
-                {isGoogleDrive ? (
+                {isBunnyStream ? (
+                  /* Bunny Stream Premium HTML5 Player */
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+                    <iframe
+                      src={`https://iframe.mediadelivery.net/embed/${bunnyLibraryId}/${rawId}?autoplay=true&loop=false&muted=false&preload=true`}
+                      loading="lazy"
+                      style={{ border: 'none', position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+                      allowFullScreen
+                    />
+
+                    {/* Floating Controls Overlay (Next Episode) */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '60px',
+                      right: '20px',
+                      zIndex: 50,
+                      display: 'flex',
+                      gap: '10px',
+                      opacity: showControls ? 1 : 0,
+                      transition: 'opacity 0.4s ease',
+                      pointerEvents: showControls ? 'auto' : 'none'
+                    }}>
+                      {/* Next Episode Button */}
+                      {(() => {
+                        const seasonEps = episodes.filter(e => (e.seasonNumber || 1) === (activeEpisode.seasonNumber || 1));
+                        const nextEp = seasonEps.find(e => e.number === activeEpisode.number + 1);
+                        if (!nextEp) return null;
+                        const isUnlocked = isEpisodeUnlocked(nextEp.id);
+                        return (
+                          <button
+                            onClick={() => handleSelectEpisode(nextEp)}
+                            className="btn-fire-glow"
+                            style={{
+                              background: isUnlocked
+                                ? 'rgba(0, 240, 255, 0.2)'
+                                : 'linear-gradient(45deg, var(--color-secondary-red), var(--color-primary-red))',
+                              border: `1px solid ${isUnlocked ? 'var(--color-neon-cyan)' : 'var(--color-primary-red)'}`,
+                              color: '#fff',
+                              padding: '8px 16px',
+                              borderRadius: '20px',
+                              fontWeight: 'bold',
+                              fontSize: '0.85rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              boxShadow: '0 0 15px rgba(0,0,0,0.5)',
+                              backdropFilter: 'blur(8px)'
+                            }}
+                          >
+                            <Play size={14} fill="#fff" />
+                            {isUnlocked ? `Próximo (Ep ${nextEp.number})` : `Desbloquear Ep ${nextEp.number}`}
+                          </button>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                ) : isGoogleDrive ? (
                   /* Google Drive Player — two phases: init (let Drive start) → ready (our controls) */
                   <>
                     {/* The iframe */}

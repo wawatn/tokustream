@@ -729,10 +729,13 @@ export default function AdminDashboard({ onClose }) {
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>ID do Vídeo (Google Drive ou YouTube)</label>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>ID do Vídeo (Bunny Stream, Google Drive ou YouTube)</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-neon-cyan)', fontWeight: 'bold' }}>⚡ Bunny Stream Ativo (Library 711399)</span>
+                    </label>
                     <input
                       type="text"
-                      placeholder="Cole o ID do Google Drive (ex: 1A2B3C...) ou link do YouTube"
+                      placeholder="Cole o ID do Bunny Stream (ex: a1b2c3d4-e5f6-7890...) ou ID do Drive"
                       value={newEpYoutubeUrl}
                       onChange={(e) => setNewEpYoutubeUrl(e.target.value)}
                       required
