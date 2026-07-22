@@ -385,7 +385,8 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                     }}>
                       {/* Next Episode Button */}
                       {(() => {
-                        const seasonEps = episodes.filter(e => (e.seasonNumber || 1) === (activeEpisode.seasonNumber || 1));
+                        const allEps = item.episodes || [];
+                        const seasonEps = allEps.filter(e => (e.season || 1) === (activeEpisode.season || 1));
                         const nextEp = seasonEps.find(e => e.number === activeEpisode.number + 1);
                         if (!nextEp) return null;
                         const isUnlocked = isEpisodeUnlocked(nextEp.id);
