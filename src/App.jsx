@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from './context/AppContext';
 import Navbar from './components/Navbar';
 import MovieRow from './components/MovieRow';
@@ -6,7 +6,7 @@ import DetailModal from './components/DetailModal';
 import AuthModal from './components/AuthModal';
 import CreditShop from './components/CreditShop';
 import AdminDashboard from './components/AdminDashboard';
-import { Play, Search } from 'lucide-react';
+import { Play, Search, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const { catalog, searchQuery, setSearchQuery, currentUser, myList } = useContext(AppContext);
@@ -18,6 +18,16 @@ export default function App() {
   const [selectedSeries, setSelectedSeries] = useState(null);
   const [selectedCategoryTab, setSelectedCategoryTab] = useState('Todos');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showEmailConfirmedModal, setShowEmailConfirmedModal] = useState(false);
+
+  useEffect(() => {
+    // Detect email confirmation hash token from Supabase redirect
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token=') || hash.includes('type=signup') || hash.includes('type=recovery'))) {
+      setShowEmailConfirmedModal(true);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
 
   // Pick a featured series for the Background Wallpaper
   const featured = catalog[0] || null;
@@ -222,7 +232,68 @@ export default function App() {
             setSelectedSeries(null);
             setShowShop(true);
           }}
-        />
+      {/* Email Confirmed Celebration Modal */}
+      {showEmailConfirmedModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          backdropFilter: 'blur(12px)'
+        }}>
+          <div className="glass" style={{
+            maxWidth: '440px',
+            width: '90%',
+            padding: '36px',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '1px solid var(--color-neon-cyan)',
+            boxShadow: '0 0 40px rgba(0, 240, 255, 0.3)'
+          }}>
+            <div style={{
+              width: '70px',
+              height: '70px',
+              borderRadius: '50%',
+              background: 'rgba(0, 240, 255, 0.15)',
+              border: '2px solid var(--color-neon-cyan)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px auto'
+            }}>
+              <CheckCircle2 size={36} color="var(--color-neon-cyan)" />
+            </div>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '12px', color: '#fff' }}>
+              E-mail Confirmado!
+            </h2>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '24px' }}>
+              Sua conta foi ativada com sucesso. Você já está conectado e pode aproveitar todo o catálogo de Doramas e Filmes do Tokustream!
+            </p>
+            <button
+              onClick={() => setShowEmailConfirmedModal(false)}
+              className="btn-fire-glow"
+              style={{
+                width: '100%',
+                padding: '12px',
+                background: 'linear-gradient(45deg, var(--color-neon-cyan), var(--color-neon-violet))',
+                color: '#000',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 900,
+                fontSize: '1rem',
+                cursor: 'pointer'
+              }}
+            >
+              Começar a Assistir 🍿
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
