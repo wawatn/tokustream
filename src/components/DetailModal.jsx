@@ -577,8 +577,8 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
                   </>
                 )}
 
-                {/* CUSTOM PLAYER INTERFACE OVERLAY (Only for YouTube, Google Drive has its own native bar) */}
-                {!isGoogleDrive && (
+                {/* CUSTOM PLAYER INTERFACE OVERLAY (Only for YouTube, Bunny Stream and Google Drive use their native players) */}
+                {!isGoogleDrive && !isBunnyStream && (
                   <div style={{
                     position: 'absolute',
                     bottom: 0,
