@@ -1,0 +1,513 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap');
+
+:root {
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Restored Dark Neon Colors */
+  --bg-primary: #080511;
+  --bg-secondary: #120e24;
+  --bg-tertiary: #191430;
+  
+  /* Mapped Doraflix variables to previous Cyan/Violet palette */
+  --color-primary-red: #00f0ff; /* Mapped to Neon Cyan */
+  --color-secondary-red: #a300ff; /* Mapped to Neon Violet */
+  --color-neon-cyan: #00f0ff;
+  --color-neon-violet: #a300ff;
+  
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #aaaaaa;
+  --color-danger: #ff0055;
+  --color-success: #00ff66;
+  --glass-bg: rgba(18, 14, 36, 0.75);
+  --glass-border: rgba(0, 240, 255, 0.15); /* Glowing cyan borders */
+
+  color-scheme: dark;
+  background-color: var(--bg-primary);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-red);
+}
+
+/* Inputs and Forms */
+input, select, textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  color: var(--color-text-primary);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-primary-red);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+}
+
+/* Glowing effects */
+.glow-red {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+}
+
+.glow-text-red {
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+.glow-text-cyan {
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+/* Doraflix Fire Glow Animation (Restored to Neon Cyan/Violet Pulsing) */
+.btn-fire-glow:hover {
+  animation: neon-glow-pulse 1.5s ease-in-out infinite;
+  transform: scale(1.05);
+}
+
+@keyframes neon-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 5px 2px rgba(0, 240, 255, 0.8),
+                0 0 12px 5px rgba(163, 0, 255, 0.5),
+                0 0 20px 10px rgba(0, 240, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 8px 4px rgba(0, 240, 255, 1),
+                0 0 16px 8px rgba(163, 0, 255, 0.6),
+                0 0 28px 14px rgba(0, 240, 255, 0.4);
+  }
+}
+
+/* Chameleon Gradient Shift */
+.chameleon-glow {
+  background: linear-gradient(120deg, #00f0ff, #a300ff, #ff0055, #00ff66, #00f0ff);
+  background-size: 400% 400%;
+  animation: camaleao 6s ease infinite;
+}
+
+@keyframes camaleao {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ToroFilm Theme Core CSS (Mapped to Cyan/Violet Palette) */
+.post {
+  position: relative;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.post-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .post-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .post-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+.entry-header {
+  margin-bottom: 8px;
+}
+
+.entry-title {
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  margin: 0 0 4px 0 !important;
+  color: #fff !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entry-meta {
+  line-height: 1rem;
+  font-size: 0.75rem;
+}
+
+.vote {
+  color: #fff;
+  font-weight: 700;
+}
+
+.vote span {
+  color: var(--color-neon-cyan);
+  margin-right: 4px;
+}
+
+.or-1 {
+  order: -1;
+}
+
+.post-thumbnail {
+  position: relative;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.post-thumbnail figure {
+  margin: 0;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.post-thumbnail figure img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  transition: all 0.4s ease-in-out;
+}
+
+.post-thumbnail .year {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  transition: all 0.4s ease-in-out;
+  font-size: 0.65rem;
+  border-radius: 4px;
+  padding: 0 8px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(255, 255, 255, 0.15);
+  line-height: 1.4rem;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.post-thumbnail .watch {
+  margin: 12px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3rem;
+  border-radius: 4px;
+  background-color: rgba(0, 240, 255, 0.15);
+  border: 1px solid var(--color-neon-cyan);
+  opacity: 0;
+  color: #fff;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-align: center;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.post-thumbnail .play {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: 2px solid var(--color-neon-cyan);
+  background: rgba(18, 14, 36, 0.7);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  transform: scale(0.5);
+  opacity: 0;
+  transition: all 0.4s ease-in-out;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.post-thumbnail .post-ql {
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  transition: all 0.4s ease-in-out;
+  max-width: 90%;
+  z-index: 3;
+}
+
+.post-thumbnail .post-ql .Qlty {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background-color: rgba(0, 240, 255, 0.2);
+  border: 1px solid var(--color-neon-cyan);
+  font-size: 0.65rem;
+  border-radius: 1rem;
+  padding: 0 6px;
+  text-transform: uppercase;
+  color: var(--color-neon-cyan);
+  font-weight: bold;
+}
+
+/* Hover States (Doraflix visual triggers) */
+.post:hover .post-thumbnail {
+  border-color: var(--color-neon-cyan);
+  box-shadow: 0 8px 24px rgba(0, 240, 255, 0.3);
+}
+
+.post:hover .post-thumbnail .play {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.post:hover .post-thumbnail .year,
+.post:hover .post-thumbnail .post-ql {
+  left: -4rem;
+  opacity: 0;
+}
+
+.post:hover .post-thumbnail .watch {
+  bottom: 0;
+  opacity: 1;
+}
+
+.post:hover .post-thumbnail figure img {
+  transform: scale(1.15) rotate(0.5deg);
+  filter: blur(2px) brightness(0.4);
+  opacity: 0.75;
+}
+
+/* Floating Vertical Social Panel */
+.social-float-vertical {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  z-index: 1000;
+  animation: slideInUp 0.6s ease-out;
+}
+
+.btn-social {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+  font-size: 20px;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+}
+
+.btn-telegram {
+  background-color: #0088cc;
+}
+
+.btn-discord {
+  background-color: #5865F2;
+}
+
+.btn-social:hover {
+  transform: scale(1.1);
+  animation: neon-glow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 100% Mobile Optimization Rules */
+@media (max-width: 768px) {
+  .mobile-fullscreen-modal {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    border: none !important;
+  }
+
+  .nav-links {
+    display: none !important;
+  }
+
+  .movie-row-scroll {
+    gap: 12px !important;
+  }
+
+  .banner-title {
+    font-size: 2.2rem !important;
+  }
+
+  .banner-description {
+    font-size: 0.95rem !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .grid-responsive-2col {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  button {
+    min-height: 40px;
+  }
+}
+
+/* ToroFilm Flex & Responsive Columns Layout Rules */
+.post-lst {
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.rw {
+  margin-left: -0.5rem;
+  margin-right: -0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.rw.sm {
+  margin-left: -0.25rem;
+  margin-right: -0.25rem;
+}
+
+.rw > * {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.rw.sm > * {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+
+/* Responsive columns:
+   rcl2 (2 columns on mobile/default)
+   rcl3a (3 columns)
+   rcl4b (4 columns)
+   rcl3c (3 columns)
+   rcl4d (4 columns)
+   rcl6e (6 columns on desktop)
+*/
+
+/* Mobile default: 3 columns (matching Doraflix) */
+.rcl2 > * {
+  flex: 0 0 calc(100% / 3) !important;
+  max-width: calc(100% / 3) !important;
+}
+
+@media (min-width: 576px) {
+  .rcl3a > * {
+    flex: 0 0 calc(100% / 3) !important;
+    max-width: calc(100% / 3) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .rcl4b > * {
+    flex: 0 0 25% !important;
+    max-width: 25% !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .rcl6e > * {
+    flex: 0 0 calc(100% / 6) !important;
+    max-width: calc(100% / 6) !important;
+  }
+}
+
+/* Center and constrain main page width on desktop like Doraflix */
+@media (min-width: 992px) {
+  .cont {
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: 100% !important;
+  }
+}
+
+/* Google Drive Custom Player */
+.gdrive-player-crop {
+  position: absolute;
+  top: -56px;
+  left: 0;
+  width: 100%;
+  height: calc(100% + 56px);
+  z-index: 5;
+  overflow: hidden;
+}
+
+.gdrive-custom-overlay {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+dist/
+
+# Environment variables (NEVER commit secrets!)
+.env
+.env.local
+.env.production
+
+# Local database (dev only)
+db.json
+server.js
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Media / Local Video Files
+.Series/
+*.mp4
+*.mkv
+
