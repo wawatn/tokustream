@@ -336,26 +336,41 @@ export const AppProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  const addCredits = (amount) => {
+  const addCredits = async (amount) => {
     if (!currentUser) return;
-    const updatedUser = { ...currentUser, credits: currentUser.credits + amount };
+    const newCreditCount = (currentUser.credits || 0) + amount;
+    const updatedUser = { ...currentUser, credits: newCreditCount };
     setCurrentUser(updatedUser);
-    setUsers(users.map(u => u.username === currentUser.username ? updatedUser : u));
+    setUsers(users.map(u => (u.id === currentUser.id || u.username === currentUser.username) ? updatedUser : u));
 
-    setTransactions([
-      ...transactions,
-      {
-        id: Date.now(),
-        type: 'purchase',
-        username: currentUser.username,
-        credits: amount,
-        amountInBrl: amount,
-        date: new Date().toISOString()
+    // Persist credits to Supabase profiles table
+    if (currentUser.id) {
+      try {
+        await supabase.from('profiles').update({
+          credits: newCreditCount
+        }).eq('id', currentUser.id);
+      } catch (err) {
+        console.error('Erro ao salvar créditos no Supabase:', err);
       }
-    ]);
+    }
+
+    // Persist transaction to Supabase transactions table
+    const newTx = {
+      type: 'purchase',
+      username: currentUser.username || currentUser.email,
+      credits: amount,
+      amount_in_brl: amount,
+      date: new Date().toISOString()
+    };
+
+    try {
+      await supabase.from('transactions').insert(newTx);
+    } catch (err) {}
+
+    setTransactions(prev => [...prev, { ...newTx, id: Date.now(), amountInBrl: amount }]);
   };
 
-  const unlockEpisode = (episodeId) => {
+  const unlockEpisode = async (episodeId) => {
     if (!currentUser) return { success: false, message: 'Faça login para desbloquear!' };
     
     const userUnlocked = unlockedEpisodes[currentUser.username] || [];
@@ -365,17 +380,27 @@ export const AppProvider = ({ children }) => {
       return { success: false, message: 'Saldo de créditos insuficiente! Recarregue seus créditos.' };
     }
 
-    const updatedUser = { ...currentUser, credits: currentUser.credits - 1 };
+    const newCreditCount = currentUser.credits - 1;
+    const updatedUser = { ...currentUser, credits: newCreditCount };
     setCurrentUser(updatedUser);
-    setUsers(users.map(u => u.username === currentUser.username ? updatedUser : u));
+    setUsers(users.map(u => (u.id === currentUser.id || u.username === currentUser.username) ? updatedUser : u));
 
-    setUnlockedEpisodes({
-      ...unlockedEpisodes,
-      [currentUser.username]: [...userUnlocked, episodeId]
-    });
+    // Update Supabase profile credits
+    if (currentUser.id) {
+      try {
+        await supabase.from('profiles').update({
+          credits: newCreditCount
+        }).eq('id', currentUser.id);
+      } catch (e) {}
+    }
 
-    setTransactions([
-      ...transactions,
+    setUnlockedEpisodes(prev => ({
+      ...prev,
+      [currentUser.username]: [...(prev[currentUser.username] || []), episodeId]
+    }));
+
+    setTransactions(prev => [
+      ...prev,
       {
         id: Date.now(),
         type: 'unlock',
