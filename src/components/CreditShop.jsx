@@ -17,6 +17,14 @@ export default function CreditShop({ onClose }) {
   const [mpLoading, setMpLoading] = useState(false);
   const [mpError, setMpError] = useState(null);
 
+  // Credit Card Form States
+  const [cardNumber, setCardNumber] = useState('');
+  const [expDate, setExpDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [holderName, setHolderName] = useState('');
+  const [cpf, setCpf] = useState('');
+  const [cardError, setCardError] = useState(null);
+
   // Pix Timer
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const timerRef = useRef(null);
@@ -183,13 +191,64 @@ export default function CreditShop({ onClose }) {
     setStep('success');
   };
 
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setCardError(null);
+
+    if (!mpConfig?.accessToken) {
+      setTimeout(() => {
+        setLoading(false);
+        handleSuccessApprove();
+      }, 1500);
+      return;
+    }
+
+    try {
+      const priceVal = parseFloat(selectedPack.price.replace('.', '').replace(',', '.'));
+      const token = mpConfig.accessToken.trim();
+      const pubKey = mpConfig.publicKey ? mpConfig.publicKey.trim() : '';
+      const [expMonth, expYear] = expDate.split('/').map(s => s.trim());
+      const safeEmail = (currentUser?.email && currentUser.email.includes('@')) 
+        ? currentUser.email 
+        : 'cliente@tokustream.com';
+
+      const res = await fetch('/api/pix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: token,
+          publicKey: pubKey,
+          paymentType: 'card',
+          amount: priceVal,
+          description: `Tokustream - ${selectedPack.label} (${selectedPack.credits} Creditos)`,
+          email: safeEmail,
+          cardData: {
+            cardNumber,
+            expMonth: expMonth || '12',
+            expYear: expYear || '30',
+            cvv,
+            holderName: holderName || 'CLIENTE TOKUSTREAM',
+            docNumber: cpf || '11122233344'
+          }
+        })
+      });
+
+      const data = await res.json();
+      console.log('Resposta Cartao Mercado Pago:', data);
+
+      if (data.status === 'approved') {
+        handleSuccessApprove();
+      } else {
+        const detail = data.cause?.[0]?.description || data.message || data.status_detail || 'Pagamento recusado pela operadora do cartão.';
+        setCardError(detail);
+      }
+    } catch (err) {
+      console.error('Erro no pagamento com cartão:', err);
+      setCardError(`Erro de processamento: ${err.message}`);
+    } finally {
       setLoading(false);
-      handleSuccessApprove();
-    }, 2000);
+    }
   };
 
   const handleCopyKey = () => {
@@ -359,27 +418,74 @@ export default function CreditShop({ onClose }) {
             </div>
 
             {paymentMethod === 'card' ? (
-              <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Número do Cartão (Simulado)</label>
-                  <input type="text" placeholder="4000 1234 5678 9010" required defaultValue="4000 1234 5678 9010" style={{ padding: '8px', fontSize: '0.85rem' }} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Validade</label>
-                    <input type="text" placeholder="12/29" required defaultValue="12/29" style={{ padding: '8px', fontSize: '0.85rem' }} />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>CVV</label>
-                    <input type="text" placeholder="123" required defaultValue="123" style={{ padding: '8px', fontSize: '0.85rem' }} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Nome no Cartão</label>
-                  <input type="text" placeholder="WAGNER SILVA" required defaultValue="WAGNER SILVA" style={{ padding: '8px', fontSize: '0.85rem' }} />
+              <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Número do Cartão</label>
+                  <input
+                    type="text"
+                    placeholder="4000 1234 5678 9010"
+                    required
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                  />
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Validade (MM/AA)</label>
+                    <input
+                      type="text"
+                      placeholder="12/29"
+                      required
+                      value={expDate}
+                      onChange={(e) => setExpDate(e.target.value)}
+                      style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>CVV</label>
+                    <input
+                      type="text"
+                      placeholder="123"
+                      required
+                      value={cvv}
+                      onChange={(e) => setCvv(e.target.value)}
+                      style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>CPF Titular</label>
+                    <input
+                      type="text"
+                      placeholder="000.000.000-00"
+                      required
+                      value={cpf}
+                      onChange={(e) => setCpf(e.target.value)}
+                      style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Nome no Cartão</label>
+                  <input
+                    type="text"
+                    placeholder="WAGNER SILVA"
+                    required
+                    value={holderName}
+                    onChange={(e) => setHolderName(e.target.value)}
+                    style={{ padding: '7px 10px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                {cardError && (
+                  <div style={{ padding: '6px 10px', borderRadius: '4px', background: 'rgba(255, 0, 0, 0.15)', border: '1px solid var(--color-primary-red)', color: '#ff6b6b', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                    ⚠️ {cardError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                   <button
                     type="button"
                     onClick={() => setStep('select')}
@@ -391,7 +497,7 @@ export default function CreditShop({ onClose }) {
                       padding: '8px',
                       borderRadius: '6px',
                       fontWeight: 'bold',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       cursor: 'pointer'
                     }}
                   >
@@ -408,13 +514,22 @@ export default function CreditShop({ onClose }) {
                       padding: '8px',
                       borderRadius: '6px',
                       fontWeight: 'bold',
-                      fontSize: '0.85rem',
+                      fontSize: '0.82rem',
                       boxShadow: '0 0 15px rgba(254, 0, 0, 0.3)',
                       opacity: loading ? 0.7 : 1,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
                     }}
                   >
-                    {loading ? 'Processando...' : 'Pagar Agora'}
+                    {loading ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite' }} />
+                        Processando...
+                      </>
+                    ) : `Pagar R$ ${selectedPack?.price}`}
                   </button>
                 </div>
               </form>
