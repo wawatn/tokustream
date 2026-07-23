@@ -43,8 +43,8 @@ export default function AdminDashboard({ onClose }) {
 
   // Keep chosen category synchronized with available categories in DB
   useEffect(() => {
-    if (categories && categories.length > 0 && !categories.includes(newSeriesCategory)) {
-      setNewSeriesCategory(categories[0]);
+    if (categories && categories.length > 0 && newSeriesCategories.length === 0) {
+      setNewSeriesCategories([categories[0]]);
     }
   }, [categories]);
 
