@@ -180,10 +180,10 @@ export default function CreditShop({ onClose }) {
         className="glass"
         style={{
           width: '100%',
-          maxWidth: '500px',
+          maxWidth: '560px',
           maxHeight: '92vh',
           overflowY: 'auto',
-          padding: '24px 28px',
+          padding: '20px 24px',
           borderRadius: '12px',
           position: 'relative',
           boxShadow: '0 0 30px rgba(254, 0, 0, 0.2)'
@@ -260,77 +260,82 @@ export default function CreditShop({ onClose }) {
 
         {step === 'payment' && (
           <div>
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               Método de Pagamento
             </h2>
-            <div style={{ marginBottom: '20px', padding: '12px', background: 'rgba(254, 0, 0, 0.05)', borderRadius: '6px', fontSize: '0.9rem' }}>
-              Você está comprando <strong>{selectedPack?.credits} Créditos</strong> por <strong>R$ {selectedPack?.price}</strong>.
+            <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'rgba(254, 0, 0, 0.08)', borderRadius: '6px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Você está comprando <strong>{selectedPack?.credits} Créditos</strong></span>
+              <strong style={{ color: 'var(--color-primary-red)', fontSize: '0.95rem' }}>R$ {selectedPack?.price}</strong>
             </div>
 
             {/* Payment Method Selector Tabs */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('card')}
                 style={{
-                  padding: '12px',
+                  padding: '8px 12px',
                   borderRadius: '6px',
                   border: `1px solid ${paymentMethod === 'card' ? 'var(--color-primary-red)' : 'var(--glass-border)'}`,
                   background: paymentMethod === 'card' ? 'rgba(254,0,0,0.05)' : 'rgba(255,255,255,0.02)',
                   color: paymentMethod === 'card' ? 'var(--color-primary-red)' : '#fff',
                   fontWeight: 'bold',
+                  fontSize: '0.85rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px'
+                  gap: '6px',
+                  cursor: 'pointer'
                 }}
               >
-                <CreditCard size={18} />
+                <CreditCard size={16} />
                 Cartão de Crédito
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('pix')}
                 style={{
-                  padding: '12px',
+                  padding: '8px 12px',
                   borderRadius: '6px',
                   border: `1px solid ${paymentMethod === 'pix' ? 'var(--color-primary-red)' : 'var(--glass-border)'}`,
                   background: paymentMethod === 'pix' ? 'rgba(254,0,0,0.05)' : 'rgba(255,255,255,0.02)',
                   color: paymentMethod === 'pix' ? 'var(--color-primary-red)' : '#fff',
                   fontWeight: 'bold',
+                  fontSize: '0.85rem',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '8px'
+                  gap: '6px',
+                  cursor: 'pointer'
                 }}
               >
-                <QrCode size={18} />
+                <QrCode size={16} />
                 Pix Instantâneo
               </button>
             </div>
 
             {paymentMethod === 'card' ? (
-              <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Número do Cartão (Simulado)</label>
-                  <input type="text" placeholder="4000 1234 5678 9010" required defaultValue="4000 1234 5678 9010" />
+              <form onSubmit={handlePaymentSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Número do Cartão (Simulado)</label>
+                  <input type="text" placeholder="4000 1234 5678 9010" required defaultValue="4000 1234 5678 9010" style={{ padding: '8px', fontSize: '0.85rem' }} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Validade</label>
-                    <input type="text" placeholder="12/29" required defaultValue="12/29" />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Validade</label>
+                    <input type="text" placeholder="12/29" required defaultValue="12/29" style={{ padding: '8px', fontSize: '0.85rem' }} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>CVV</label>
-                    <input type="text" placeholder="123" required defaultValue="123" />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>CVV</label>
+                    <input type="text" placeholder="123" required defaultValue="123" style={{ padding: '8px', fontSize: '0.85rem' }} />
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Nome no Cartão</label>
-                  <input type="text" placeholder="WAGNER SILVA" required defaultValue="WAGNER SILVA" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Nome no Cartão</label>
+                  <input type="text" placeholder="WAGNER SILVA" required defaultValue="WAGNER SILVA" style={{ padding: '8px', fontSize: '0.85rem' }} />
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                   <button
                     type="button"
                     onClick={() => setStep('select')}
@@ -339,9 +344,11 @@ export default function CreditShop({ onClose }) {
                       background: 'rgba(255, 255, 255, 0.05)',
                       border: '1px solid var(--glass-border)',
                       color: '#fff',
-                      padding: '12px',
+                      padding: '8px',
                       borderRadius: '6px',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
                     }}
                   >
                     Voltar
@@ -351,14 +358,16 @@ export default function CreditShop({ onClose }) {
                     className="btn-fire-glow"
                     disabled={loading}
                     style={{
-                      flex: 1,
+                      flex: 1.5,
                       background: 'linear-gradient(45deg, var(--color-secondary-red), var(--color-primary-red))',
                       color: '#fff',
-                      padding: '12px',
+                      padding: '8px',
                       borderRadius: '6px',
                       fontWeight: 'bold',
+                      fontSize: '0.85rem',
                       boxShadow: '0 0 15px rgba(254, 0, 0, 0.3)',
-                      opacity: loading ? 0.7 : 1
+                      opacity: loading ? 0.7 : 1,
+                      cursor: 'pointer'
                     }}
                   >
                     {loading ? 'Processando...' : 'Pagar Agora'}
@@ -366,188 +375,167 @@ export default function CreditShop({ onClose }) {
                 </div>
               </form>
             ) : (
-              /* Pix Component */
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
-                
+              /* Ultra-Compact 2-Column Pix Component */
+              <div style={{ padding: '4px 0' }}>
                 {mpLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '20px' }}>
-                    <RefreshCw size={28} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite', color: 'var(--color-neon-cyan)' }} />
-                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Gerando QR Code PIX no Mercado Pago...</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '20px' }}>
+                    <RefreshCw size={24} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite', color: 'var(--color-neon-cyan)' }} />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Gerando PIX Mercado Pago...</span>
                   </div>
                 ) : (
-                  /* Visual QR Code (Mercado Pago ou Mockup) */
-                  <div style={{
-                    padding: '10px',
-                    background: '#ffffff',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
-                    position: 'relative'
-                  }}>
-                    {realQrCodeBase64 ? (
-                      <img
-                        src={`data:image/png;base64,${realQrCodeBase64}`}
-                        alt="QR Code PIX Mercado Pago"
-                        style={{ width: '150px', height: '150px', display: 'block' }}
-                      />
-                    ) : (
-                      /* Styled Mockup QR Code grid blocks */
-                      <svg width="150" height="150" viewBox="0 0 180 180" style={{ shapeRendering: 'crispEdges' }}>
-                        <rect width="180" height="180" fill="white" />
-                        <rect x="10" y="10" width="50" height="50" fill="black" />
-                        <rect x="20" y="20" width="30" height="30" fill="white" />
-                        <rect x="10" y="120" width="50" height="50" fill="black" />
-                        <rect x="20" y="130" width="30" height="30" fill="white" />
-                        <rect x="120" y="10" width="50" height="50" fill="black" />
-                        <rect x="130" y="20" width="30" height="30" fill="white" />
-                        <path d="M70 20h20v20H70zm30 10h10v10h-10zm0 30h20v10h-20zm-20 20h30v10H80zm50 10h20v20h-20zm-30 20h10v10h-10zm10 20h10v10h-10zm-60 10h20v10H70zm20-50h10v20H90zm20 60h20v20h-20zm30-20h20v20h-20z" fill="black" />
-                        <path d="M20 70h10v30H20zm40 10h10v20H60zm50-60h20v10h-20zm-30 90h10v20H80zm60 20h10v20h-10z" fill="black" />
-                      </svg>
-                    )}
-                  </div>
-                )}
-
-                {mpError && (
-                  <div style={{ color: 'var(--color-danger)', fontSize: '0.8rem', fontStyle: 'italic', textAlign: 'center' }}>
-                    ⚠️ {mpError}
-                  </div>
-                )}
-
-                {/* Expiration Timer & Loader */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: mpConfig?.accessToken ? 'var(--color-neon-cyan)' : 'var(--color-primary-red)', fontWeight: 'bold' }}>
-                    <RefreshCw size={16} className="animate-spin" style={{ animation: 'spin 2s linear infinite' }} />
-                    <span>{mpConfig?.accessToken ? 'Aguardando pagamento no banco...' : 'Aguardando confirmação do banco...'}</span>
-                  </div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                    O QR Code expira em: <strong style={{ color: 'var(--color-danger)' }}>{formatTime(timeLeft)}</strong>
-                  </span>
-                </div>
-
-                {/* Pix Copia e Cola */}
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Código Pix Copia e Cola</label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="text"
-                      readOnly
-                      value={realQrCodeCopy || `00020126360014BR.GOV.BCB.PIX0114tokustream@pix520400005303986540${selectedPack?.price.replace(',', '.')}5802BR5915TOKUSTREAM...`}
-                      style={{ flexGrow: 1, background: 'rgba(255,255,255,0.02)', cursor: 'default', fontSize: '0.85rem' }}
-                    />
-                    <button
-                      onClick={handleCopyKey}
-                      style={{
-                        padding: '10px 14px',
-                        background: copied ? 'var(--color-success)' : 'rgba(255,255,255,0.05)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '6px',
+                  <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: '16px', alignItems: 'start' }}>
+                    {/* Left Column: QR Code & Expiration */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                      <div style={{
+                        padding: '6px',
+                        background: '#ffffff',
+                        borderRadius: '8px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: copied ? '#000' : '#fff',
-                        fontWeight: 'bold',
-                        fontSize: '0.9rem',
-                        minWidth: '100px'
-                      }}
-                    >
-                      {copied ? 'Copiado!' : (
-                        <>
-                          <Copy size={16} style={{ marginRight: '6px' }} />
-                          Copiar
-                        </>
+                        boxShadow: '0 0 15px rgba(0, 240, 255, 0.25)'
+                      }}>
+                        {realQrCodeBase64 ? (
+                          <img
+                            src={`data:image/png;base64,${realQrCodeBase64}`}
+                            alt="QR Code PIX"
+                            style={{ width: '118px', height: '118px', display: 'block' }}
+                          />
+                        ) : (
+                          <svg width="118" height="118" viewBox="0 0 180 180" style={{ shapeRendering: 'crispEdges' }}>
+                            <rect width="180" height="180" fill="white" />
+                            <rect x="10" y="10" width="50" height="50" fill="black" />
+                            <rect x="20" y="20" width="30" height="30" fill="white" />
+                            <rect x="10" y="120" width="50" height="50" fill="black" />
+                            <rect x="20" y="130" width="30" height="30" fill="white" />
+                            <rect x="120" y="10" width="50" height="50" fill="black" />
+                            <rect x="130" y="20" width="30" height="30" fill="white" />
+                            <path d="M70 20h20v20H70zm30 10h10v10h-10zm0 30h20v10h-20zm-20 20h30v10H80zm50 10h20v20h-20zm-30 20h10v10h-10zm10 20h10v10h-10zm-60 10h20v10H70zm20-50h10v20H90zm20 60h20v20h-20zm30-20h20v20h-20z" fill="black" />
+                            <path d="M20 70h10v30H20zm40 10h10v20H60zm50-60h20v10h-20zm-30 90h10v20H80zm60 20h10v20h-10z" fill="black" />
+                          </svg>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+                        Expira em: <strong style={{ color: 'var(--color-danger)' }}>{formatTime(timeLeft)}</strong>
+                      </span>
+                    </div>
+
+                    {/* Right Column: Copy Key + Status + Action Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: mpConfig?.accessToken ? 'var(--color-neon-cyan)' : 'var(--color-primary-red)', fontWeight: 'bold' }}>
+                        <RefreshCw size={14} className="animate-spin" style={{ animation: 'spin 2s linear infinite' }} />
+                        <span>{mpConfig?.accessToken ? 'Aguardando PIX no banco...' : 'Aguardando confirmação...'}</span>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>Pix Copia e Cola</label>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <input
+                            type="text"
+                            readOnly
+                            value={realQrCodeCopy || `00020126360014BR.GOV.BCB.PIX0114tokustream...`}
+                            style={{ flexGrow: 1, padding: '6px 8px', fontSize: '0.78rem', background: 'rgba(255,255,255,0.02)', cursor: 'default' }}
+                          />
+                          <button
+                            onClick={handleCopyKey}
+                            style={{
+                              padding: '6px 12px',
+                              background: copied ? 'var(--color-success)' : 'rgba(255,255,255,0.08)',
+                              border: '1px solid var(--glass-border)',
+                              borderRadius: '4px',
+                              fontSize: '0.8rem',
+                              fontWeight: 'bold',
+                              color: copied ? '#000' : '#fff',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {copied ? 'Copiado!' : 'Copiar'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {!mpConfig?.accessToken && (
+                        <div style={{ padding: '6px 10px', borderRadius: '4px', background: 'rgba(255, 170, 0, 0.1)', border: '1px solid #ffaa00', color: '#ffaa00', fontSize: '0.75rem' }}>
+                          💡 Cole seu Access Token no Painel Admin para PIX real.
+                        </div>
                       )}
-                    </button>
-                  </div>
-                </div>
 
-                {!mpConfig?.accessToken && (
-                  <div style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(255, 170, 0, 0.1)', border: '1px solid #ffaa00', color: '#ffaa00', fontSize: '0.8rem', textAlign: 'center', width: '100%' }}>
-                    💡 <strong>Atenção:</strong> Cole seu <strong>Access Token</strong> no Painel Admin &gt; Pagamentos 💳 para gerar o QR Code PIX oficial da sua conta!
+                      {/* Compact Action Buttons */}
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setStep('select')}
+                          style={{
+                            flex: 1,
+                            padding: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid var(--glass-border)',
+                            color: '#fff',
+                            borderRadius: '4px',
+                            fontSize: '0.82rem',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Voltar
+                        </button>
+
+                        {mpConfig?.accessToken ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (paymentId) {
+                                try {
+                                  const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+                                    headers: { 'Authorization': `Bearer ${mpConfig.accessToken}` }
+                                  });
+                                  const data = await res.json();
+                                  if (data.status === 'approved') {
+                                    handleSuccessApprove();
+                                  } else {
+                                    alert(`Status: ${data.status || 'pendente'}. Pague no app do banco para liberar.`);
+                                  }
+                                } catch(e) {
+                                  alert('Aguardando confirmação...');
+                                }
+                              }
+                            }}
+                            style={{
+                              flex: 1.5,
+                              padding: '8px',
+                              background: 'linear-gradient(45deg, var(--color-neon-cyan), var(--color-neon-violet))',
+                              color: '#fff',
+                              borderRadius: '4px',
+                              fontSize: '0.82rem',
+                              fontWeight: 'bold',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Checar Pagamento
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSuccessApprove}
+                            style={{
+                              flex: 1.5,
+                              padding: '8px',
+                              background: 'rgba(255, 255, 255, 0.1)',
+                              border: '1px solid var(--glass-border)',
+                              color: '#fff',
+                              borderRadius: '4px',
+                              fontSize: '0.82rem',
+                              fontWeight: 'bold',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Simular (Teste)
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
-
-                <div style={{
-                  display: 'flex',
-                  gap: '12px',
-                  width: '100%',
-                  marginTop: '10px',
-                  borderTop: '1px solid var(--glass-border)',
-                  paddingTop: '20px'
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setStep('select')}
-                    style={{
-                      flex: 1,
-                      background: 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid var(--glass-border)',
-                      color: '#fff',
-                      padding: '12px',
-                      borderRadius: '6px',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    Voltar
-                  </button>
-                  
-                  {mpConfig?.accessToken ? (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (paymentId) {
-                          try {
-                            const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-                              headers: { 'Authorization': `Bearer ${mpConfig.accessToken}` }
-                            });
-                            const data = await res.json();
-                            if (data.status === 'approved') {
-                              handleSuccessApprove();
-                            } else {
-                              alert(`Status do pagamento: ${data.status || 'pendente'}. Pague o PIX pelo seu app bancário para liberar os créditos.`);
-                            }
-                          } catch(e) {
-                            alert('Aguardando confirmação do banco...');
-                          }
-                        }
-                      }}
-                      style={{
-                        flex: 1.2,
-                        background: 'linear-gradient(45deg, var(--color-neon-cyan), var(--color-neon-violet))',
-                        color: '#fff',
-                        padding: '12px',
-                        borderRadius: '6px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <RefreshCw size={16} />
-                      Já paguei (Verificar)
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSuccessApprove}
-                      style={{
-                        flex: 1.2,
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid var(--glass-border)',
-                        color: '#fff',
-                        padding: '12px',
-                        borderRadius: '6px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Simular Confirmação (Teste)
-                    </button>
-                  )}
-                </div>
               </div>
             )}
           </div>
