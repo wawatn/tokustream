@@ -88,6 +88,26 @@ export const AppProvider = ({ children }) => {
     };
   }, []);
 
+  const getStoredEpThumbnails = () => {
+    try {
+      return JSON.parse(localStorage.getItem('tokustream_ep_thumbnails') || '{}');
+    } catch (e) {
+      return {};
+    }
+  };
+
+  const saveEpThumbnail = (key, thumbUrl) => {
+    try {
+      const stored = getStoredEpThumbnails();
+      if (thumbUrl) {
+        stored[key] = thumbUrl;
+      } else {
+        delete stored[key];
+      }
+      localStorage.setItem('tokustream_ep_thumbnails', JSON.stringify(stored));
+    } catch (e) {}
+  };
+
   // Load catalog and episodes from Supabase Cloud DB
   const fetchCatalogFromSupabase = async () => {
     try {
@@ -100,17 +120,26 @@ export const AppProvider = ({ children }) => {
           .from('episodes')
           .select('*');
 
+        const storedThumbs = getStoredEpThumbnails();
+
         const formattedCatalog = catData.map(item => {
           const seriesEps = (epData || [])
             .filter(ep => ep.catalog_id === item.id)
-            .map(ep => ({
-              id: ep.id,
-              number: ep.episode_number,
-              title: ep.title,
-              youtubeId: ep.video_id,
-              season: ep.season_number || 1,
-              thumbnail: ep.thumbnail_url || ep.thumbnail || null
-            }));
+            .map(ep => {
+              const epNum = ep.episode_number;
+              const seasonNum = ep.season_number || 1;
+              const thumbKey = `${item.id}-s${seasonNum}-ep${epNum}`;
+              const foundThumb = ep.thumbnail_url || ep.thumbnail || storedThumbs[ep.id] || storedThumbs[thumbKey] || storedThumbs[`${item.id}-ep-${epNum}`] || null;
+
+              return {
+                id: ep.id,
+                number: epNum,
+                title: ep.title,
+                youtubeId: ep.video_id,
+                season: seasonNum,
+                thumbnail: foundThumb
+              };
+            });
 
           const epSeasons = seriesEps.map(e => e.season || 1);
           let seasonsList = [1];
@@ -408,10 +437,22 @@ export const AppProvider = ({ children }) => {
   };
 
   const addEpisode = async (seriesId, episode) => {
+    const epId = episode.id || `${seriesId}-ep-${Date.now()}`;
+    const seasonNum = episode.season ? parseInt(episode.season, 10) : 1;
+    const epNum = parseInt(episode.number, 10) || 1;
+    const thumb = episode.thumbnail || null;
+
+    if (thumb) {
+      saveEpThumbnail(epId, thumb);
+      saveEpThumbnail(`${seriesId}-s${seasonNum}-ep${epNum}`, thumb);
+    }
+
     const newEpisode = {
       ...episode,
-      id: `${seriesId}-ep-${Date.now()}`,
-      season: episode.season ? parseInt(episode.season, 10) : 1
+      id: epId,
+      season: seasonNum,
+      number: epNum,
+      thumbnail: thumb
     };
 
     setCatalog(prev => prev.map(s => {
@@ -428,11 +469,11 @@ export const AppProvider = ({ children }) => {
     try {
       await supabase.from('episodes').insert({
         catalog_id: seriesId,
-        season_number: episode.season ? parseInt(episode.season, 10) : 1,
-        episode_number: parseInt(episode.number, 10) || 1,
-        title: episode.title || `Episódio ${episode.number}`,
+        season_number: seasonNum,
+        episode_number: epNum,
+        title: episode.title || `Episódio ${epNum}`,
         video_id: episode.youtubeId || episode.video_id,
-        thumbnail_url: episode.thumbnail || null
+        thumbnail_url: thumb
       });
       fetchCatalogFromSupabase();
     } catch (err) {
@@ -441,6 +482,15 @@ export const AppProvider = ({ children }) => {
   };
 
   const editEpisode = async (seriesId, episodeId, updatedEpisode) => {
+    const seasonNum = updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : 1;
+    const epNum = parseInt(updatedEpisode.number, 10) || 1;
+    const thumb = updatedEpisode.thumbnail || null;
+
+    saveEpThumbnail(episodeId, thumb);
+    if (epNum) {
+      saveEpThumbnail(`${seriesId}-s${seasonNum}-ep${epNum}`, thumb);
+    }
+
     setCatalog(prev => prev.map(s => {
       if (s.id === seriesId) {
         return {
@@ -450,10 +500,10 @@ export const AppProvider = ({ children }) => {
               ? {
                   ...ep,
                   title: updatedEpisode.title,
-                  number: parseInt(updatedEpisode.number, 10) || ep.number,
+                  number: epNum,
                   youtubeId: updatedEpisode.youtubeId,
-                  thumbnail: updatedEpisode.thumbnail || null,
-                  season: updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : (ep.season || 1)
+                  thumbnail: thumb,
+                  season: seasonNum
                 }
               : ep
           )
