@@ -3,17 +3,69 @@ import { AppContext } from '../context/AppContext';
 import { X, Coins, Check, CreditCard, QrCode, Copy, RefreshCw, AlertCircle } from 'lucide-react';
 
 export default function CreditShop({ onClose }) {
-  const { addCredits } = useContext(AppContext);
+  const { addCredits, mpConfig, currentUser } = useContext(AppContext);
   const [selectedPack, setSelectedPack] = useState(null);
   const [step, setStep] = useState('select'); // 'select' | 'payment' | 'success'
   const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'pix'
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   
+  // Real Mercado Pago States
+  const [realQrCodeBase64, setRealQrCodeBase64] = useState(null);
+  const [realQrCodeCopy, setRealQrCodeCopy] = useState(null);
+  const [paymentId, setPaymentId] = useState(null);
+  const [mpLoading, setMpLoading] = useState(false);
+  const [mpError, setMpError] = useState(null);
+
   // Pix Timer
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
   const timerRef = useRef(null);
   const autoApproveRef = useRef(null);
+  const pollRef = useRef(null);
+
+  const generateRealPixPayment = async (pack) => {
+    if (!mpConfig?.accessToken) return;
+    setMpLoading(true);
+    setMpError(null);
+    setRealQrCodeBase64(null);
+    setRealQrCodeCopy(null);
+
+    try {
+      const priceVal = parseFloat(pack.price.replace('.', '').replace(',', '.'));
+      const res = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${mpConfig.accessToken}`
+        },
+        body: JSON.stringify({
+          transaction_amount: priceVal,
+          description: `Tokustream - ${pack.label} (${pack.credits} Créditos)`,
+          payment_method_id: 'pix',
+          payer: {
+            email: currentUser?.username ? `${currentUser.username.toLowerCase()}@tokustream.com` : 'cliente@tokustream.com',
+            first_name: currentUser?.username || 'Cliente',
+            last_name: 'Tokustream'
+          }
+        })
+      });
+
+      const data = await res.json();
+      if (data.id && data.point_of_interaction?.transaction_data) {
+        setPaymentId(data.id);
+        setRealQrCodeCopy(data.point_of_interaction.transaction_data.qr_code);
+        setRealQrCodeBase64(data.point_of_interaction.transaction_data.qr_code_base64);
+      } else {
+        console.warn('Resposta Mercado Pago:', data);
+        setMpError(data.message || 'Erro ao gerar PIX real. Usando modo de simulação.');
+      }
+    } catch (err) {
+      console.error('Erro ao conectar ao Mercado Pago:', err);
+      setMpError('Servidor Mercado Pago inacessível. Usando modo de simulação.');
+    } finally {
+      setMpLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (step === 'payment' && paymentMethod === 'pix') {
@@ -30,17 +82,49 @@ export default function CreditShop({ onClose }) {
         });
       }, 1000);
 
-      // Auto-approve after 8 seconds for simulation demo
-      autoApproveRef.current = setTimeout(() => {
-        handleSuccessApprove();
-      }, 8000);
+      if (mpConfig?.accessToken && selectedPack) {
+        // Real Mercado Pago Flow
+        generateRealPixPayment(selectedPack);
+      } else {
+        // Auto-approve after 8 seconds for simulation mode if no MP access token
+        autoApproveRef.current = setTimeout(() => {
+          handleSuccessApprove();
+        }, 8000);
+      }
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (autoApproveRef.current) clearTimeout(autoApproveRef.current);
+      if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [step, paymentMethod]);
+  }, [step, paymentMethod, selectedPack]);
+
+  // Mercado Pago Real-time Status Polling
+  useEffect(() => {
+    if (paymentId && mpConfig?.accessToken && step === 'payment') {
+      pollRef.current = setInterval(async () => {
+        try {
+          const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+            headers: {
+              'Authorization': `Bearer ${mpConfig.accessToken}`
+            }
+          });
+          const data = await res.json();
+          if (data.status === 'approved') {
+            clearInterval(pollRef.current);
+            handleSuccessApprove();
+          }
+        } catch (err) {
+          console.error('Erro ao consultar status:', err);
+        }
+      }, 3000);
+    }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [paymentId, mpConfig, step]);
 
   const packs = [
     { id: 1, credits: 10, price: '10,00', discount: null, label: 'Pacote Inicial' },
@@ -56,6 +140,7 @@ export default function CreditShop({ onClose }) {
   const handleSuccessApprove = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (autoApproveRef.current) clearTimeout(autoApproveRef.current);
+    if (pollRef.current) clearInterval(pollRef.current);
     addCredits(selectedPack.credits);
     setStep('success');
   };
@@ -70,8 +155,8 @@ export default function CreditShop({ onClose }) {
   };
 
   const handleCopyKey = () => {
-    const fakeKey = `00020126360014BR.GOV.BCB.PIX0114tokustream@pix520400005303986540${selectedPack?.price.replace(',', '.')}5802BR5915TOKUSTREAM LTDA6009SAO PAULO62070503***6304ABCD`;
-    navigator.clipboard.writeText(fakeKey);
+    const keyToCopy = realQrCodeCopy || `00020126360014BR.GOV.BCB.PIX0114tokustream@pix520400005303986540${selectedPack?.price.replace(',', '.')}5802BR5915TOKUSTREAM LTDA6009SAO PAULO62070503***6304ABCD`;
+    navigator.clipboard.writeText(keyToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -286,38 +371,58 @@ export default function CreditShop({ onClose }) {
             ) : (
               /* Pix Component */
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '10px 0' }}>
-                {/* Visual Fake QR Code */}
-                <div style={{
-                  padding: '16px',
-                  background: '#ffffff',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 0 20px rgba(254,0,0,0.2)',
-                  position: 'relative'
-                }}>
-                  {/* Styled Fake QR Code grid blocks */}
-                  <svg width="180" height="180" viewBox="0 0 180 180" style={{ shapeRendering: 'crispEdges' }}>
-                    <rect width="180" height="180" fill="white" />
-                    {/* Corners */}
-                    <rect x="10" y="10" width="50" height="50" fill="black" />
-                    <rect x="20" y="20" width="30" height="30" fill="white" />
-                    <rect x="10" y="120" width="50" height="50" fill="black" />
-                    <rect x="20" y="130" width="30" height="30" fill="white" />
-                    <rect x="120" y="10" width="50" height="50" fill="black" />
-                    <rect x="130" y="20" width="30" height="30" fill="white" />
-                    {/* Random mockup pixels */}
-                    <path d="M70 20h20v20H70zm30 10h10v10h-10zm0 30h20v10h-20zm-20 20h30v10H80zm50 10h20v20h-20zm-30 20h10v10h-10zm10 20h10v10h-10zm-60 10h20v10H70zm20-50h10v20H90zm20 60h20v20h-20zm30-20h20v20h-20z" fill="black" />
-                    <path d="M20 70h10v30H20zm40 10h10v20H60zm50-60h20v10h-20zm-30 90h10v20H80zm60 20h10v20h-10z" fill="black" />
-                  </svg>
-                </div>
+                
+                {mpLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px' }}>
+                    <RefreshCw size={32} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite', color: 'var(--color-neon-cyan)' }} />
+                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Gerando QR Code PIX no Mercado Pago...</span>
+                  </div>
+                ) : (
+                  /* Visual QR Code (Mercado Pago ou Mockup) */
+                  <div style={{
+                    padding: '16px',
+                    background: '#ffffff',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 0 20px rgba(0, 240, 255, 0.3)',
+                    position: 'relative'
+                  }}>
+                    {realQrCodeBase64 ? (
+                      <img
+                        src={`data:image/png;base64,${realQrCodeBase64}`}
+                        alt="QR Code PIX Mercado Pago"
+                        style={{ width: '180px', height: '180px', display: 'block' }}
+                      />
+                    ) : (
+                      /* Styled Mockup QR Code grid blocks */
+                      <svg width="180" height="180" viewBox="0 0 180 180" style={{ shapeRendering: 'crispEdges' }}>
+                        <rect width="180" height="180" fill="white" />
+                        <rect x="10" y="10" width="50" height="50" fill="black" />
+                        <rect x="20" y="20" width="30" height="30" fill="white" />
+                        <rect x="10" y="120" width="50" height="50" fill="black" />
+                        <rect x="20" y="130" width="30" height="30" fill="white" />
+                        <rect x="120" y="10" width="50" height="50" fill="black" />
+                        <rect x="130" y="20" width="30" height="30" fill="white" />
+                        <path d="M70 20h20v20H70zm30 10h10v10h-10zm0 30h20v10h-20zm-20 20h30v10H80zm50 10h20v20h-20zm-30 20h10v10h-10zm10 20h10v10h-10zm-60 10h20v10H70zm20-50h10v20H90zm20 60h20v20h-20zm30-20h20v20h-20z" fill="black" />
+                        <path d="M20 70h10v30H20zm40 10h10v20H60zm50-60h20v10h-20zm-30 90h10v20H80zm60 20h10v20h-10z" fill="black" />
+                      </svg>
+                    )}
+                  </div>
+                )}
+
+                {mpError && (
+                  <div style={{ color: 'var(--color-danger)', fontSize: '0.8rem', fontStyle: 'italic', textAlign: 'center' }}>
+                    ⚠️ {mpError}
+                  </div>
+                )}
 
                 {/* Expiration Timer & Loader */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-primary-red)', fontWeight: 'bold' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: mpConfig?.accessToken ? 'var(--color-neon-cyan)' : 'var(--color-primary-red)', fontWeight: 'bold' }}>
                     <RefreshCw size={16} className="animate-spin" style={{ animation: 'spin 2s linear infinite' }} />
-                    <span>Aguardando confirmação do banco...</span>
+                    <span>{mpConfig?.accessToken ? 'Aguardando pagamento no banco...' : 'Aguardando confirmação do banco...'}</span>
                   </div>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                     O QR Code expira em: <strong style={{ color: 'var(--color-danger)' }}>{formatTime(timeLeft)}</strong>
@@ -331,8 +436,8 @@ export default function CreditShop({ onClose }) {
                     <input
                       type="text"
                       readOnly
-                      value={`00020126360014BR.GOV.BCB.PIX0114tokustream@pix520400005303986540${selectedPack?.price.replace(',', '.')}5802BR5915TOKUSTREAM...`}
-                      style={{ flexGrow: 1, background: 'rgba(255,255,255,0.02)', cursor: 'default' }}
+                      value={realQrCodeCopy || `00020126360014BR.GOV.BCB.PIX0114tokustream@pix520400005303986540${selectedPack?.price.replace(',', '.')}5802BR5915TOKUSTREAM...`}
+                      style={{ flexGrow: 1, background: 'rgba(255,255,255,0.02)', cursor: 'default', fontSize: '0.85rem' }}
                     />
                     <button
                       onClick={handleCopyKey}

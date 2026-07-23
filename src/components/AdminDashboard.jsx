@@ -12,10 +12,14 @@ const SUGGESTED_COVERS = [
 ];
 
 export default function AdminDashboard({ onClose }) {
-  const { catalog, addSeries, editSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason, deleteSeason } = useContext(AppContext);
-  const [activeTab, setActiveTab] = useState('content'); // 'content' | 'categories' | 'metrics'
+  const { catalog, addSeries, editSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason, deleteSeason, mpConfig, saveMpConfig } = useContext(AppContext);
+  const [activeTab, setActiveTab] = useState('content'); // 'content' | 'categories' | 'payments' | 'metrics'
   const [contentSubTab, setContentSubTab] = useState('list'); // 'list' | 'add'
   const [selectedSeriesId, setSelectedSeriesId] = useState(null);
+  
+  // Mercado Pago config states
+  const [mpTokenInput, setMpTokenInput] = useState(mpConfig?.accessToken || '');
+  const [mpPublicKeyInput, setMpPublicKeyInput] = useState(mpConfig?.publicKey || '');
   
   // Search state inside catalog
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
@@ -261,6 +265,22 @@ export default function AdminDashboard({ onClose }) {
             >
               <FolderOpen size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
               Categorias
+            </button>
+            <button
+              onClick={() => setActiveTab('payments')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '0.9rem',
+                fontWeight: 'bold',
+                color: activeTab === 'payments' ? 'var(--color-neon-cyan)' : '#fff',
+                background: activeTab === 'payments' ? 'rgba(0, 240, 255, 0.05)' : 'transparent',
+                border: activeTab === 'payments' ? '1px solid rgba(0, 240, 255, 0.2)' : 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <CreditCard size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+              Pagamentos 💳
             </button>
             <button
               onClick={() => setActiveTab('metrics')}
@@ -1191,6 +1211,117 @@ export default function AdminDashboard({ onClose }) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'payments' && (
+        /* Tab: Mercado Pago Integration Config */
+        <div className="glass" style={{ padding: '30px', borderRadius: '12px', maxWidth: '750px', margin: '0 auto', width: '100%' }}>
+          <h3 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CreditCard size={22} color="var(--color-neon-cyan)" />
+            Configuração do Mercado Pago (PIX Automático & Cartão)
+          </h3>
+
+          {/* Status Indicator */}
+          <div style={{
+            padding: '14px 18px',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            background: mpConfig?.accessToken ? 'rgba(0, 255, 120, 0.1)' : 'rgba(255, 170, 0, 0.1)',
+            border: `1px solid ${mpConfig?.accessToken ? '#00ff78' : '#ffaa00'}`,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: mpConfig?.accessToken ? '#00ff78' : '#ffaa00', boxShadow: `0 0 10px ${mpConfig?.accessToken ? '#00ff78' : '#ffaa00'}` }} />
+            <div>
+              <strong style={{ display: 'block', fontSize: '0.95rem', color: mpConfig?.accessToken ? '#00ff78' : '#ffaa00' }}>
+                {mpConfig?.accessToken ? ' Mercado Pago Conectado (PIX Automático Ativo)' : ' Modo Simulação Ativo'}
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                {mpConfig?.accessToken 
+                  ? 'Os pagamentos PIX geram cobranças oficiais em tempo real na sua conta do Mercado Pago e creditam as moedas automaticamente após o pagamento.' 
+                  : 'Cole seu Access Token do Mercado Pago abaixo para ativar a geração real de QR Codes PIX.'}
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            saveMpConfig({ accessToken: mpTokenInput.trim(), publicKey: mpPublicKeyInput.trim() });
+            alert('Configuração do Mercado Pago salva com sucesso!');
+          }} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                Mercado Pago Access Token (Produção ou Teste)
+              </label>
+              <input
+                type="password"
+                placeholder="Ex: APP_USR-1234567890123456-123456-..."
+                value={mpTokenInput}
+                onChange={(e) => setMpTokenInput(e.target.value)}
+                style={{ width: '100%', padding: '12px', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
+                🔑 Para pegar seu Access Token: acesse <strong>https://www.mercadopago.com.br/developers/panel/app</strong> &gt; Clique na sua aplicação &gt; Credenciais de produção (ou credenciais de teste).
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                Mercado Pago Public Key (Opcional)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: APP_USR-xxxx-xxxx-xxxx"
+                value={mpPublicKeyInput}
+                onChange={(e) => setMpPublicKeyInput(e.target.value)}
+                style={{ width: '100%', padding: '12px', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '6px', fontSize: '0.9rem' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+              <button
+                type="submit"
+                style={{
+                  flex: 1,
+                  background: 'linear-gradient(45deg, #00f0ff, #a300ff)',
+                  color: '#fff',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  border: 'none',
+                  fontSize: '0.95rem'
+                }}
+              >
+                Salvar Credenciais Mercado Pago
+              </button>
+              {mpConfig?.accessToken && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    saveMpConfig({ accessToken: '', publicKey: '' });
+                    setMpTokenInput('');
+                    setMpPublicKeyInput('');
+                    alert('Credenciais do Mercado Pago removidas!');
+                  }}
+                  style={{
+                    padding: '12px 18px',
+                    borderRadius: '6px',
+                    background: 'rgba(255, 0, 85, 0.1)',
+                    border: '1px solid var(--color-danger)',
+                    color: 'var(--color-danger)',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Desconectar
+                </button>
+              )}
+            </div>
+          </form>
         </div>
       )}
 

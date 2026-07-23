@@ -709,6 +709,22 @@ export const AppProvider = ({ children }) => {
     setCatalog(INITIAL_CATALOG);
   };
 
+  const [mpConfig, setMpConfig] = useState(() => {
+    try {
+      const saved = localStorage.getItem('tokustream_mp_config');
+      return saved ? JSON.parse(saved) : { accessToken: '', publicKey: '' };
+    } catch(e) {
+      return { accessToken: '', publicKey: '' };
+    }
+  });
+
+  const saveMpConfig = (config) => {
+    setMpConfig(config);
+    try {
+      localStorage.setItem('tokustream_mp_config', JSON.stringify(config));
+    } catch(e) {}
+  };
+
   return (
     <AppContext.Provider value={{
       currentUser,
@@ -739,7 +755,9 @@ export const AppProvider = ({ children }) => {
       addCategory: addDbCategory,
       deleteCategory: deleteDbCategory,
       addSeason,
-      deleteSeason
+      deleteSeason,
+      mpConfig,
+      saveMpConfig
     }}>
       {children}
     </AppContext.Provider>
