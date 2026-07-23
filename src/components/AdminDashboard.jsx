@@ -46,13 +46,27 @@ export default function AdminDashboard({ onClose }) {
     }
   }, [categories]);
 
+  // Auto-suggest next episode number when series or season changes
+  useEffect(() => {
+    if (!editingEpisodeId && selectedSeriesId) {
+      const seriesObj = catalog.find(s => s.id === selectedSeriesId);
+      if (seriesObj && seriesObj.type === 'Série') {
+        const seasonEps = (seriesObj.episodes || []).filter(e => (parseInt(e.season, 10) || 1) === parseInt(selectedSeason, 10));
+        const maxEp = seasonEps.reduce((max, e) => Math.max(max, parseInt(e.number, 10) || 0), 0);
+        setNewEpNumber((maxEp + 1).toString());
+      } else {
+        setNewEpNumber('1');
+      }
+    }
+  }, [selectedSeriesId, selectedSeason, catalog, editingEpisodeId]);
+
   // Reset selected season when series changes
   useEffect(() => {
     setSelectedSeason(1);
     setEditingEpisodeId(null);
     setNewEpTitle('');
-    setNewEpNumber('');
     setNewEpYoutubeUrl('');
+    setNewEpThumbnail('');
   }, [selectedSeriesId]);
 
   // Calculations for Metrics Dashboard
@@ -861,8 +875,6 @@ export default function AdminDashboard({ onClose }) {
                           borderRadius: '6px',
                           background: 'rgba(255, 255, 255, 0.05)',
                           border: '1px solid var(--glass-border)',
-                          color: '#fff',
-                          fontWeight: 'bold',
                           cursor: 'pointer'
                         }}
                       >
@@ -874,80 +886,93 @@ export default function AdminDashboard({ onClose }) {
 
                 {/* List of episodes / videos */}
                 <div>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '16px' }}>
-                    {selectedSeries.type === 'Filme' ? 'Vídeo Atual' : `Episódios Cadastrados (Temporada ${selectedSeason})`}
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '250px', overflowY: 'auto' }}>
-                    {selectedSeries.episodes && selectedSeries.episodes.length > 0 ? (
-                      selectedSeries.episodes
-                        .filter(ep => selectedSeries.type === 'Filme' || (ep.season || 1) === selectedSeason)
-                        .map((ep) => (
-                          <div
-                            key={ep.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              padding: '10px 14px',
-                              borderRadius: '6px',
-                              background: 'rgba(255,255,255,0.01)',
-                              border: '1px solid var(--glass-border)'
-                            }}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              {selectedSeries.type !== 'Filme' && (
-                                <span style={{ fontWeight: 'bold', color: 'var(--color-neon-cyan)', fontSize: '0.9rem' }}>
-                                  Ep {ep.number}
-                                </span>
-                              )}
-                              <span style={{ fontSize: '0.9rem' }}>{ep.title}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingEpisodeId(ep.id);
-                                  setNewEpTitle(ep.title);
-                                  setNewEpNumber(ep.number);
-                                  setNewEpYoutubeUrl(ep.youtubeId || '');
-                                  setNewEpThumbnail(ep.thumbnail || '');
-                                }}
+                  {(() => {
+                    const currentSeasonEps = selectedSeries.episodes && selectedSeries.episodes.length > 0
+                      ? selectedSeries.episodes
+                          .filter(ep => selectedSeries.type === 'Filme' || (parseInt(ep.season, 10) || 1) === parseInt(selectedSeason, 10))
+                          .sort((a, b) => (parseInt(a.number, 10) || 0) - (parseInt(b.number, 10) || 0))
+                      : [];
+
+                    return (
+                      <>
+                        <h4 style={{ fontSize: '1.1rem', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>{selectedSeries.type === 'Filme' ? 'Vídeo Atual' : `Episódios Cadastrados (Temporada ${selectedSeason})`}</span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--color-neon-cyan)', background: 'rgba(0, 240, 255, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+                            {currentSeasonEps.length} {currentSeasonEps.length === 1 ? 'episódio' : 'episódios'}
+                          </span>
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '500px', overflowY: 'auto', paddingRight: '4px' }}>
+                          {currentSeasonEps.length > 0 ? (
+                            currentSeasonEps.map((ep) => (
+                              <div
+                                key={ep.id}
                                 style={{
-                                  padding: '6px',
-                                  background: 'rgba(0, 240, 255, 0.1)',
-                                  border: '1px solid var(--color-neon-cyan)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  color: 'var(--color-neon-cyan)'
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '10px 14px',
+                                  borderRadius: '6px',
+                                  background: 'rgba(255,255,255,0.02)',
+                                  border: '1px solid var(--glass-border)'
                                 }}
-                                title="Editar Episódio"
                               >
-                                <Edit3 size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteEpisode(selectedSeriesId, ep.id)}
-                                style={{
-                                  padding: '6px',
-                                  background: 'rgba(255, 0, 85, 0.1)',
-                                  border: '1px solid var(--color-danger)',
-                                  borderRadius: '4px',
-                                  cursor: 'pointer',
-                                  color: 'var(--color-danger)'
-                                }}
-                                title="Excluir Episódio"
-                              >
-                                <Trash size={14} />
-                              </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  {selectedSeries.type !== 'Filme' && (
+                                    <span style={{ fontWeight: 'bold', color: 'var(--color-neon-cyan)', fontSize: '0.9rem' }}>
+                                      Ep {ep.number}
+                                    </span>
+                                  )}
+                                  <span style={{ fontSize: '0.9rem' }}>{ep.title}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingEpisodeId(ep.id);
+                                      setNewEpTitle(ep.title);
+                                      setNewEpNumber(ep.number);
+                                      setNewEpYoutubeUrl(ep.youtubeId || '');
+                                      setNewEpThumbnail(ep.thumbnail || '');
+                                    }}
+                                    style={{
+                                      padding: '6px',
+                                      background: 'rgba(0, 240, 255, 0.1)',
+                                      border: '1px solid var(--color-neon-cyan)',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      color: 'var(--color-neon-cyan)'
+                                    }}
+                                    title="Editar Episódio"
+                                  >
+                                    <Edit3 size={14} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteEpisode(selectedSeriesId, ep.id)}
+                                    style={{
+                                      padding: '6px',
+                                      background: 'rgba(255, 0, 85, 0.1)',
+                                      border: '1px solid var(--color-danger)',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      color: 'var(--color-danger)'
+                                    }}
+                                    title="Excluir Episódio"
+                                  >
+                                    <Trash size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontStyle: 'italic', fontSize: '0.9rem', padding: '20px' }}>
+                              Nenhum vídeo cadastrado nesta temporada ainda.
                             </div>
-                          </div>
-                        ))
-                    ) : (
-                      <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontStyle: 'italic', fontSize: '0.9rem' }}>
-                        Nenhum vídeo cadastrado.
-                      </div>
-                    )}
-                  </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}

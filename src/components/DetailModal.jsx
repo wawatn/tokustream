@@ -1011,7 +1011,9 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {(() => {
                   const filteredEpisodes = item.episodes 
-                    ? item.episodes.filter(ep => (ep.season || 1) === selectedSeason)
+                    ? item.episodes
+                        .filter(ep => (parseInt(ep.season, 10) || 1) === parseInt(selectedSeason, 10))
+                        .sort((a, b) => (parseInt(a.number, 10) || 0) - (parseInt(b.number, 10) || 0))
                     : [];
 
                   if (filteredEpisodes.length === 0) {

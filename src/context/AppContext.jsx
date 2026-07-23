@@ -126,8 +126,8 @@ export const AppProvider = ({ children }) => {
           const seriesEps = (epData || [])
             .filter(ep => ep.catalog_id === item.id)
             .map(ep => {
-              const epNum = ep.episode_number;
-              const seasonNum = ep.season_number || 1;
+              const epNum = parseInt(ep.episode_number, 10) || 1;
+              const seasonNum = parseInt(ep.season_number, 10) || 1;
               const thumbKey = `${item.id}-s${seasonNum}-ep${epNum}`;
               const foundThumb = ep.thumbnail_url || ep.thumbnail || storedThumbs[ep.id] || storedThumbs[thumbKey] || storedThumbs[`${item.id}-ep-${epNum}`] || null;
 
@@ -139,7 +139,8 @@ export const AppProvider = ({ children }) => {
                 season: seasonNum,
                 thumbnail: foundThumb
               };
-            });
+            })
+            .sort((a, b) => a.number - b.number);
 
           const epSeasons = seriesEps.map(e => e.season || 1);
           let seasonsList = [1];
