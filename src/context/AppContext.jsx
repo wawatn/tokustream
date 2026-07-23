@@ -100,28 +100,45 @@ export const AppProvider = ({ children }) => {
           .from('episodes')
           .select('*');
 
-        const formattedCatalog = catData.map(item => ({
-          id: item.id,
-          title: item.title,
-          description: item.description,
-          category: item.category,
-          cover: item.cover_url,
-          cover_url: item.cover_url,
-          trailerYoutubeId: item.trailer_url || 'YtD5-Ynfe3Y',
-          type: item.type || 'Série',
-          year: item.year || '2026',
-          rating: item.rating || '9.5',
-          seasons: [1, 2, 3],
-          episodes: (epData || [])
+        const formattedCatalog = catData.map(item => {
+          const seriesEps = (epData || [])
             .filter(ep => ep.catalog_id === item.id)
             .map(ep => ({
               id: ep.id,
               number: ep.episode_number,
               title: ep.title,
               youtubeId: ep.video_id,
-              season: ep.season_number || 1
-            }))
-        }));
+              season: ep.season_number || 1,
+              thumbnail: ep.thumbnail_url || ep.thumbnail || null
+            }));
+
+          const epSeasons = seriesEps.map(e => e.season || 1);
+          let seasonsList = [1];
+          if (item.seasons) {
+            if (Array.isArray(item.seasons) && item.seasons.length > 0) {
+              seasonsList = item.seasons;
+            } else if (typeof item.seasons === 'string') {
+              try { seasonsList = JSON.parse(item.seasons); } catch(e){}
+            }
+          } else {
+            seasonsList = Array.from(new Set([1, ...epSeasons])).sort((a, b) => a - b);
+          }
+
+          return {
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            category: item.category,
+            cover: item.cover_url,
+            cover_url: item.cover_url,
+            trailerYoutubeId: item.trailer_url || 'YtD5-Ynfe3Y',
+            type: item.type || 'Série',
+            year: item.year || '2026',
+            rating: item.rating || '9.5',
+            seasons: seasonsList,
+            episodes: seriesEps
+          };
+        });
 
         setCatalog(formattedCatalog);
       }
@@ -414,7 +431,8 @@ export const AppProvider = ({ children }) => {
         season_number: episode.season ? parseInt(episode.season, 10) : 1,
         episode_number: parseInt(episode.number, 10) || 1,
         title: episode.title || `Episódio ${episode.number}`,
-        video_id: episode.youtubeId || episode.video_id
+        video_id: episode.youtubeId || episode.video_id,
+        thumbnail_url: episode.thumbnail || null
       });
       fetchCatalogFromSupabase();
     } catch (err) {
@@ -434,6 +452,7 @@ export const AppProvider = ({ children }) => {
                   title: updatedEpisode.title,
                   number: parseInt(updatedEpisode.number, 10) || ep.number,
                   youtubeId: updatedEpisode.youtubeId,
+                  thumbnail: updatedEpisode.thumbnail || null,
                   season: updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : (ep.season || 1)
                 }
               : ep
@@ -448,7 +467,8 @@ export const AppProvider = ({ children }) => {
         season_number: updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : 1,
         episode_number: parseInt(updatedEpisode.number, 10) || 1,
         title: updatedEpisode.title,
-        video_id: updatedEpisode.youtubeId
+        video_id: updatedEpisode.youtubeId,
+        thumbnail_url: updatedEpisode.thumbnail || null
       }).eq('id', episodeId);
       fetchCatalogFromSupabase();
     } catch (err) {
@@ -473,18 +493,48 @@ export const AppProvider = ({ children }) => {
     } catch (err) {}
   };
 
-  const addSeason = (seriesId) => {
-    setCatalog(catalog.map(s => {
+  const addSeason = async (seriesId) => {
+    let newSeasonsList = [1];
+    setCatalog(prev => prev.map(s => {
       if (s.id === seriesId) {
         const seasons = s.seasons || [1];
         const nextSeason = seasons.length > 0 ? Math.max(...seasons) + 1 : 1;
+        newSeasonsList = [...seasons, nextSeason];
         return {
           ...s,
-          seasons: [...seasons, nextSeason]
+          seasons: newSeasonsList
         };
       }
       return s;
     }));
+
+    try {
+      await supabase.from('catalog').update({ seasons: newSeasonsList }).eq('id', seriesId);
+    } catch (err) {}
+  };
+
+  const deleteSeason = async (seriesId, seasonNumber) => {
+    let newSeasonsList = [1];
+    setCatalog(prev => prev.map(s => {
+      if (s.id === seriesId) {
+        const remainingSeasons = (s.seasons || [1]).filter(sn => sn !== seasonNumber);
+        newSeasonsList = remainingSeasons.length > 0 ? remainingSeasons : [1];
+        return {
+          ...s,
+          seasons: newSeasonsList,
+          episodes: (s.episodes || []).filter(ep => (ep.season || 1) !== seasonNumber)
+        };
+      }
+      return s;
+    }));
+
+    try {
+      await supabase.from('catalog').update({ seasons: newSeasonsList }).eq('id', seriesId);
+      await supabase.from('episodes').delete().eq('catalog_id', seriesId).eq('season_number', seasonNumber);
+      fetchCatalogFromSupabase();
+    } catch (err) {
+      console.error('Erro ao remover temporada no Supabase:', err);
+    }
   };
 
 
@@ -531,7 +581,8 @@ export const AppProvider = ({ children }) => {
       categories: dbCategories,
       addCategory: addDbCategory,
       deleteCategory: deleteDbCategory,
-      addSeason
+      addSeason,
+      deleteSeason
     }}>
       {children}
     </AppContext.Provider>

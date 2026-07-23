@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.catalog (
   type TEXT DEFAULT 'Série',
   year TEXT DEFAULT '2026',
   rating TEXT DEFAULT '9.5',
+  seasons JSONB DEFAULT '[1]'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -31,8 +32,13 @@ CREATE TABLE IF NOT EXISTS public.episodes (
   episode_number INT NOT NULL,
   title TEXT NOT NULL,
   video_id TEXT NOT NULL, -- Bunny Stream Video ID or Drive ID
+  thumbnail_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- MIGRAÇÕES / COLUNAS OPCIONAIS (caso as tabelas já existam)
+ALTER TABLE public.catalog ADD COLUMN IF NOT EXISTS seasons JSONB DEFAULT '[1]'::jsonb;
+ALTER TABLE public.episodes ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
 
 -- 4. CATEGORIES TABLE
 CREATE TABLE IF NOT EXISTS public.categories (

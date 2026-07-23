@@ -12,7 +12,7 @@ const SUGGESTED_COVERS = [
 ];
 
 export default function AdminDashboard({ onClose }) {
-  const { catalog, addSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason } = useContext(AppContext);
+  const { catalog, addSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason, deleteSeason } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('content'); // 'content' | 'categories' | 'metrics'
   const [contentSubTab, setContentSubTab] = useState('list'); // 'list' | 'add'
   const [selectedSeriesId, setSelectedSeriesId] = useState(null);
@@ -665,6 +665,7 @@ export default function AdminDashboard({ onClose }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <span style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>Temporadas:</span>
                       <button
+                        type="button"
                         onClick={() => addSeason(selectedSeries.id)}
                         style={{
                           padding: '4px 10px',
@@ -679,25 +680,57 @@ export default function AdminDashboard({ onClose }) {
                         + Adicionar Temporada
                       </button>
                     </div>
-                    {/* Season Tabs Selector */}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Season Tabs Selector with Delete Button */}
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                       {(selectedSeries.seasons || [1]).map((sNum) => (
-                        <button
-                          key={sNum}
-                          onClick={() => setSelectedSeason(sNum)}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '4px',
-                            fontSize: '0.85rem',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            background: selectedSeason === sNum ? 'var(--color-neon-violet)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${selectedSeason === sNum ? 'var(--color-neon-violet)' : 'var(--glass-border)'}`,
-                            color: '#fff'
-                          }}
-                        >
-                          T. {sNum}
-                        </button>
+                        <div key={sNum} style={{ display: 'flex', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedSeason(sNum)}
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: (selectedSeries.seasons || []).length > 1 ? '4px 0 0 4px' : '4px',
+                              fontSize: '0.85rem',
+                              fontWeight: 'bold',
+                              cursor: 'pointer',
+                              background: selectedSeason === sNum ? 'var(--color-neon-violet)' : 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${selectedSeason === sNum ? 'var(--color-neon-violet)' : 'var(--glass-border)'}`,
+                              borderRight: (selectedSeries.seasons || []).length > 1 ? 'none' : undefined,
+                              color: '#fff'
+                            }}
+                          >
+                            T. {sNum}
+                          </button>
+                          {(selectedSeries.seasons || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(`Deseja realmente excluir a Temporada ${sNum} e todos os episódios contidos nela?`)) {
+                                  deleteSeason(selectedSeries.id, sNum);
+                                  if (selectedSeason === sNum) {
+                                    const remaining = (selectedSeries.seasons || []).filter(s => s !== sNum);
+                                    setSelectedSeason(remaining[0] || 1);
+                                  }
+                                }
+                              }}
+                              style={{
+                                padding: '6px 8px',
+                                borderRadius: '0 4px 4px 0',
+                                fontSize: '0.75rem',
+                                background: 'rgba(255, 0, 85, 0.15)',
+                                border: '1px solid rgba(255, 0, 85, 0.4)',
+                                borderLeft: 'none',
+                                color: 'var(--color-danger)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                              title={`Excluir Temporada ${sNum}`}
+                            >
+                              <Trash size={12} />
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -790,25 +823,53 @@ export default function AdminDashboard({ onClose }) {
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    style={{
-                      background: 'linear-gradient(45deg, #00f0ff, #a300ff)',
-                      color: '#fff',
-                      padding: '12px',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      boxShadow: '0 0 15px rgba(0, 240, 255, 0.3)'
-                    }}
-                  >
-                    <Plus size={18} />
-                    {selectedSeries.type === 'Filme' ? 'Salvar Vídeo do Filme' : `Adicionar Ep à Temporada ${selectedSeason}`}
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="submit"
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(45deg, #00f0ff, #a300ff)',
+                        color: '#fff',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 15px rgba(0, 240, 255, 0.3)'
+                      }}
+                    >
+                      {editingEpisodeId ? <Edit3 size={18} /> : <Plus size={18} />}
+                      {editingEpisodeId 
+                        ? 'Salvar Alterações do Episódio' 
+                        : (selectedSeries.type === 'Filme' ? 'Salvar Vídeo do Filme' : `Adicionar Ep à Temporada ${selectedSeason}`)}
+                    </button>
+                    {editingEpisodeId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingEpisodeId(null);
+                          setNewEpTitle('');
+                          setNewEpNumber('');
+                          setNewEpYoutubeUrl('');
+                          setNewEpThumbnail('');
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid var(--glass-border)',
+                          color: '#fff',
+                          fontWeight: 'bold',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </form>
 
                 {/* List of episodes / videos */}
@@ -849,6 +910,7 @@ export default function AdminDashboard({ onClose }) {
                                   setNewEpTitle(ep.title);
                                   setNewEpNumber(ep.number);
                                   setNewEpYoutubeUrl(ep.youtubeId || '');
+                                  setNewEpThumbnail(ep.thumbnail || '');
                                 }}
                                 style={{
                                   padding: '6px',
