@@ -122,7 +122,9 @@ export const AppProvider = ({ children }) => {
 
         const storedThumbs = getStoredEpThumbnails();
         setCatalog(prev => {
-          return catData.map(item => {
+          return catData
+            .filter(item => item.title !== '__mp_config__' && item.type !== 'Config')
+            .map(item => {
             const seriesEpsFromDb = (epData || [])
               .filter(ep => ep.catalog_id === item.id)
               .map(ep => {
@@ -738,27 +740,60 @@ export const AppProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    supabase.from('app_config').select('*').eq('key', 'mp_config').single()
-      .then(({ data }) => {
+    const fetchMpConfigCloud = async () => {
+      // 1. Try app_config table
+      try {
+        const { data } = await supabase.from('app_config').select('*').eq('key', 'mp_config').single();
         if (data && data.value) {
-          try {
-            const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-            if (parsed && parsed.accessToken) {
-              setMpConfig(parsed);
-              localStorage.setItem('tokustream_mp_config', JSON.stringify(parsed));
-            }
-          } catch(e) {}
+          const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+          if (parsed && parsed.accessToken) {
+            setMpConfig(parsed);
+            localStorage.setItem('tokustream_mp_config', JSON.stringify(parsed));
+            return;
+          }
         }
-      }).catch(() => {});
+      } catch(e) {}
+
+      // 2. Fallback: try fetching from catalog special config row
+      try {
+        const { data } = await supabase.from('catalog').select('*').eq('title', '__mp_config__').single();
+        if (data && data.description) {
+          const parsed = JSON.parse(data.description);
+          if (parsed && parsed.accessToken) {
+            setMpConfig(parsed);
+            localStorage.setItem('tokustream_mp_config', JSON.stringify(parsed));
+          }
+        }
+      } catch(e) {}
+    };
+
+    fetchMpConfigCloud();
   }, []);
 
   const saveMpConfig = async (config) => {
     setMpConfig(config);
     try {
       localStorage.setItem('tokustream_mp_config', JSON.stringify(config));
+    } catch(e) {}
+
+    // Save to app_config table
+    try {
       await supabase.from('app_config').upsert({
         key: 'mp_config',
         value: JSON.stringify(config)
+      });
+    } catch(e) {}
+
+    // Save to catalog config row as cloud backup
+    try {
+      await supabase.from('catalog').upsert({
+        id: 'config-mp-global',
+        title: '__mp_config__',
+        description: JSON.stringify(config),
+        category: 'Config',
+        cover_url: '',
+        trailer_url: '',
+        type: 'Config'
       });
     } catch(e) {}
   };
