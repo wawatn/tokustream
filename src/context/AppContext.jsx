@@ -741,7 +741,31 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchMpConfigCloud = async () => {
-      // 1. Try app_config table
+      // 1. Try localStorage
+      try {
+        const local = localStorage.getItem('tokustream_mp_config');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && parsed.accessToken) {
+            setMpConfig(parsed);
+          }
+        }
+      } catch(e) {}
+
+      // 2. Try catalog table (__mp_config__)
+      try {
+        const { data } = await supabase.from('catalog').select('*').eq('title', '__mp_config__').single();
+        if (data && data.description) {
+          const parsed = JSON.parse(data.description);
+          if (parsed && parsed.accessToken) {
+            setMpConfig(parsed);
+            localStorage.setItem('tokustream_mp_config', JSON.stringify(parsed));
+            return;
+          }
+        }
+      } catch(e) {}
+
+      // 3. Try app_config table
       try {
         const { data } = await supabase.from('app_config').select('*').eq('key', 'mp_config').single();
         if (data && data.value) {
@@ -754,14 +778,15 @@ export const AppProvider = ({ children }) => {
         }
       } catch(e) {}
 
-      // 2. Fallback: try fetching from catalog special config row
+      // 4. Try profiles table (admin row)
       try {
-        const { data } = await supabase.from('catalog').select('*').eq('title', '__mp_config__').single();
-        if (data && data.description) {
-          const parsed = JSON.parse(data.description);
+        const { data } = await supabase.from('profiles').select('*').eq('is_admin', true).limit(1);
+        if (data && data[0] && data[0].mp_config) {
+          const parsed = typeof data[0].mp_config === 'string' ? JSON.parse(data[0].mp_config) : data[0].mp_config;
           if (parsed && parsed.accessToken) {
             setMpConfig(parsed);
             localStorage.setItem('tokustream_mp_config', JSON.stringify(parsed));
+            return;
           }
         }
       } catch(e) {}
@@ -785,6 +810,27 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('tokustream_mp_config', JSON.stringify(finalConfig));
     } catch(e) {}
 
+    // Save to catalog config row (without hardcoded id)
+    try {
+      const { data: existing } = await supabase.from('catalog').select('id').eq('title', '__mp_config__').single();
+      if (existing?.id) {
+        await supabase.from('catalog').update({
+          description: JSON.stringify(finalConfig)
+        }).eq('id', existing.id);
+      } else {
+        await supabase.from('catalog').insert({
+          title: '__mp_config__',
+          description: JSON.stringify(finalConfig),
+          category: 'Config',
+          cover_url: '',
+          trailer_url: '',
+          type: 'Config'
+        });
+      }
+    } catch(e) {
+      console.warn('Aviso ao salvar mp_config no catalog:', e);
+    }
+
     // Save to app_config table
     try {
       await supabase.from('app_config').upsert({
@@ -793,18 +839,14 @@ export const AppProvider = ({ children }) => {
       });
     } catch(e) {}
 
-    // Save to catalog config row as cloud backup
-    try {
-      await supabase.from('catalog').upsert({
-        id: 'config-mp-global',
-        title: '__mp_config__',
-        description: JSON.stringify(finalConfig),
-        category: 'Config',
-        cover_url: '',
-        trailer_url: '',
-        type: 'Config'
-      });
-    } catch(e) {}
+    // Save to profiles table for admin
+    if (currentUser?.id) {
+      try {
+        await supabase.from('profiles').update({
+          mp_config: JSON.stringify(finalConfig)
+        }).eq('id', currentUser.id);
+      } catch(e) {}
+    }
   };
 
   return (
