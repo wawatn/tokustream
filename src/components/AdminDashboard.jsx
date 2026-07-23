@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Plus, Trash, Film, Tv, Video, ArrowLeft, BarChart3, Users, Landmark, PlayCircle, Image, Sparkles, FolderOpen, List, Search, Edit3 } from 'lucide-react';
+import { Plus, Trash, Film, Tv, Video, ArrowLeft, BarChart3, Users, Landmark, PlayCircle, Image, Sparkles, FolderOpen, List, Search, Edit3, CreditCard } from 'lucide-react';
 
 const SUGGESTED_COVERS = [
   { name: 'Tokyo Neon', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?w=800&auto=format&fit=crop&q=80' },
