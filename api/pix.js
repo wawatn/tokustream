@@ -27,7 +27,8 @@ export default async function handler(req, res) {
         },
         body: JSON.stringify({
           transaction_amount: amount,
-          description: description || 'Creditos Tokustream',
+          description: description || 'Tokustream - Creditos',
+          statement_descriptor: 'TOKUSTREAM',
           payment_method_id: 'pix',
           payer: {
             email: email || 'cliente@tokustream.com',
