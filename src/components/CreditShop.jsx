@@ -30,51 +30,77 @@ export default function CreditShop({ onClose }) {
     setRealQrCodeBase64(null);
     setRealQrCodeCopy(null);
 
-    try {
-      const priceVal = parseFloat(pack.price.replace('.', '').replace(',', '.'));
-      const token = mpConfig.accessToken.trim();
-      const idempotencyKey = `tokustream-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-      const safeEmail = (currentUser?.email && currentUser.email.includes('@')) 
-        ? currentUser.email 
-        : 'cliente@tokustream.com';
+    const priceVal = parseFloat(pack.price.replace('.', '').replace(',', '.'));
+    const token = mpConfig.accessToken.trim();
+    const safeEmail = (currentUser?.email && currentUser.email.includes('@')) 
+      ? currentUser.email 
+      : 'cliente@tokustream.com';
 
-      const res = await fetch('https://api.mercadopago.com/v1/payments', {
+    let data = null;
+    let success = false;
+
+    // Strategy 1: Vercel /api/pix serverless route
+    try {
+      const res = await fetch('/api/pix', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'X-Idempotency-Key': idempotencyKey
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transaction_amount: priceVal,
+          accessToken: token,
+          amount: priceVal,
           description: `Tokustream - ${pack.label} (${pack.credits} Creditos)`,
-          payment_method_id: 'pix',
-          payer: {
-            email: safeEmail,
-            first_name: currentUser?.username || 'Cliente',
-            last_name: 'Tokustream'
-          }
+          email: safeEmail
         })
       });
-
-      const data = await res.json();
-      console.log('Resposta Mercado Pago:', data);
-
-      if (data.id && data.point_of_interaction?.transaction_data) {
-        setPaymentId(data.id);
-        setRealQrCodeCopy(data.point_of_interaction.transaction_data.qr_code);
-        setRealQrCodeBase64(data.point_of_interaction.transaction_data.qr_code_base64);
-      } else {
-        const errorDetail = data.cause?.[0]?.description || data.message || 'Credencial inválida ou rejeitada pelo Mercado Pago';
-        console.warn('Erro Mercado Pago API:', data);
-        setMpError(errorDetail);
+      if (res.ok) {
+        data = await res.json();
+        if (data && data.id) success = true;
       }
-    } catch (err) {
-      console.error('Erro ao conectar ao Mercado Pago:', err);
-      setMpError(`Erro de conexão: ${err.message}`);
-    } finally {
-      setMpLoading(false);
+    } catch (e) {
+      console.log('Rota /api/pix indisponível, tentando proxy secundário...', e);
     }
+
+    // Strategy 2: Proxy CORS para chamada direta sem bloqueio do navegador
+    if (!success) {
+      try {
+        const idempotencyKey = `tokustream-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+        const targetUrl = 'https://corsproxy.io/?https://api.mercadopago.com/v1/payments';
+        const res = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'X-Idempotency-Key': idempotencyKey
+          },
+          body: JSON.stringify({
+            transaction_amount: priceVal,
+            description: `Tokustream - ${pack.label} (${pack.credits} Creditos)`,
+            payment_method_id: 'pix',
+            payer: {
+              email: safeEmail,
+              first_name: currentUser?.username || 'Cliente',
+              last_name: 'Tokustream'
+            }
+          })
+        });
+
+        data = await res.json();
+      } catch (err) {
+        console.error('Erro no proxy Mercado Pago:', err);
+      }
+    }
+
+    if (data && data.id && data.point_of_interaction?.transaction_data) {
+      setPaymentId(data.id);
+      setRealQrCodeCopy(data.point_of_interaction.transaction_data.qr_code);
+      setRealQrCodeBase64(data.point_of_interaction.transaction_data.qr_code_base64);
+    } else if (data) {
+      const errorDetail = data.cause?.[0]?.description || data.message || (typeof data === 'string' ? data : 'Erro ao processar com o Mercado Pago.');
+      setMpError(errorDetail);
+    } else {
+      setMpError('Não foi possível conectar ao Mercado Pago.');
+    }
+
+    setMpLoading(false);
   };
 
   useEffect(() => {
@@ -109,13 +135,21 @@ export default function CreditShop({ onClose }) {
     if (paymentId && mpConfig?.accessToken && step === 'payment') {
       pollRef.current = setInterval(async () => {
         try {
-          const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-            headers: {
-              'Authorization': `Bearer ${mpConfig.accessToken}`
-            }
-          });
-          const data = await res.json();
-          if (data.status === 'approved') {
+          const token = mpConfig.accessToken.trim();
+          let data = null;
+          try {
+            const res = await fetch(`/api/pix?id=${paymentId}&accessToken=${encodeURIComponent(token)}`);
+            if (res.ok) data = await res.json();
+          } catch(e) {}
+
+          if (!data || !data.status) {
+            const res = await fetch(`https://corsproxy.io/?https://api.mercadopago.com/v1/payments/${paymentId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) data = await res.json();
+          }
+
+          if (data?.status === 'approved') {
             clearInterval(pollRef.current);
             handleSuccessApprove();
           }
