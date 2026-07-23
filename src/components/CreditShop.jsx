@@ -32,18 +32,25 @@ export default function CreditShop({ onClose }) {
 
     try {
       const priceVal = parseFloat(pack.price.replace('.', '').replace(',', '.'));
+      const token = mpConfig.accessToken.trim();
+      const idempotencyKey = `tokustream-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+      const safeEmail = (currentUser?.email && currentUser.email.includes('@')) 
+        ? currentUser.email 
+        : 'cliente@tokustream.com';
+
       const res = await fetch('https://api.mercadopago.com/v1/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mpConfig.accessToken}`
+          'Authorization': `Bearer ${token}`,
+          'X-Idempotency-Key': idempotencyKey
         },
         body: JSON.stringify({
           transaction_amount: priceVal,
-          description: `Tokustream - ${pack.label} (${pack.credits} Créditos)`,
+          description: `Tokustream - ${pack.label} (${pack.credits} Creditos)`,
           payment_method_id: 'pix',
           payer: {
-            email: currentUser?.username ? `${currentUser.username.toLowerCase()}@tokustream.com` : 'cliente@tokustream.com',
+            email: safeEmail,
             first_name: currentUser?.username || 'Cliente',
             last_name: 'Tokustream'
           }
@@ -51,17 +58,20 @@ export default function CreditShop({ onClose }) {
       });
 
       const data = await res.json();
+      console.log('Resposta Mercado Pago:', data);
+
       if (data.id && data.point_of_interaction?.transaction_data) {
         setPaymentId(data.id);
         setRealQrCodeCopy(data.point_of_interaction.transaction_data.qr_code);
         setRealQrCodeBase64(data.point_of_interaction.transaction_data.qr_code_base64);
       } else {
-        console.warn('Resposta Mercado Pago:', data);
-        setMpError(data.message || 'Erro ao gerar PIX real. Usando modo de simulação.');
+        const errorDetail = data.cause?.[0]?.description || data.message || 'Credencial inválida ou rejeitada pelo Mercado Pago';
+        console.warn('Erro Mercado Pago API:', data);
+        setMpError(errorDetail);
       }
     } catch (err) {
       console.error('Erro ao conectar ao Mercado Pago:', err);
-      setMpError('Servidor Mercado Pago inacessível. Usando modo de simulação.');
+      setMpError(`Erro de conexão: ${err.message}`);
     } finally {
       setMpLoading(false);
     }
@@ -453,6 +463,12 @@ export default function CreditShop({ onClose }) {
                           </button>
                         </div>
                       </div>
+
+                      {mpError && (
+                        <div style={{ padding: '6px 10px', borderRadius: '4px', background: 'rgba(255, 0, 0, 0.15)', border: '1px solid var(--color-primary-red)', color: '#ff6b6b', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                          ⚠️ {mpError}
+                        </div>
+                      )}
 
                       {!mpConfig?.accessToken && (
                         <div style={{ padding: '6px 10px', borderRadius: '4px', background: 'rgba(255, 170, 0, 0.1)', border: '1px solid #ffaa00', color: '#ffaa00', fontSize: '0.75rem' }}>
