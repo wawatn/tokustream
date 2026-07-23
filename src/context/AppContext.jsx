@@ -259,19 +259,38 @@ export const AppProvider = ({ children }) => {
         return { success: false, message: error.message };
       }
 
-      if (data?.user && !data?.session) {
-        return {
-          success: true,
-          message: `Cadastro prévio realizado! Enviamos um e-mail de confirmação para ${email}. Acesse sua caixa de entrada e clique no link para ativar sua conta antes de fazer login.`
+      const userId = data?.user?.id;
+      if (userId) {
+        // Insert/upsert profile row into Supabase profiles table
+        try {
+          await supabase.from('profiles').upsert({
+            id: userId,
+            username: username || email.split('@')[0],
+            credits: 0,
+            is_admin: false
+          });
+        } catch (pe) {}
+
+        const newUserObj = {
+          id: userId,
+          email,
+          username: username || email.split('@')[0],
+          isAdmin: false,
+          credits: 0
         };
+        
+        if (data.session) {
+          setCurrentUser(newUserObj);
+        }
       }
 
-      return { success: true, message: 'Conta criada com sucesso!' };
+      return { 
+        success: true, 
+        autoLoggedIn: !!data?.session,
+        message: 'Conta criada com sucesso! Seja bem-vindo ao Tokustream.' 
+      };
     } catch (err) {
-      const newUser = { username, password, email, isAdmin: false, credits: 0 };
-      setUsers(prev => [...prev, newUser]);
-      setCurrentUser(newUser);
-      return { success: true };
+      return { success: false, message: 'Erro ao se conectar com o servidor.' };
     }
   };
 

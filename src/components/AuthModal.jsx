@@ -27,7 +27,11 @@ export default function AuthModal({ onClose }) {
       const res = await registerUser(email, password, username);
       setLoading(false);
       if (res.success) {
-        setSuccessMessage(res.message || 'Cadastro realizado! Verifique seu e-mail para confirmar a conta.');
+        if (res.autoLoggedIn) {
+          onClose();
+        } else {
+          setSuccessMessage(res.message || 'Conta criada com sucesso! Faça login abaixo para acessar.');
+        }
       } else {
         setError(res.message);
       }
