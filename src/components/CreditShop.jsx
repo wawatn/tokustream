@@ -173,6 +173,7 @@ export default function CreditShop({ onClose }) {
   }, [paymentId, mpConfig, step]);
 
   const packs = [
+    { id: 0, credits: 1, price: '1,00', discount: null, label: 'Pacote Teste 🧪' },
     { id: 1, credits: 10, price: '10,00', discount: null, label: 'Pacote Inicial' },
     { id: 2, credits: 50, price: '45,00', discount: '10% de desconto', label: 'Pacote Aventura' },
     { id: 3, credits: 100, price: '80,00', discount: '20% de desconto', label: 'Pacote Maratonador' }
