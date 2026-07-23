@@ -1248,7 +1248,9 @@ export default function AdminDashboard({ onClose }) {
 
           <form onSubmit={(e) => {
             e.preventDefault();
-            saveMpConfig({ accessToken: mpTokenInput.trim(), publicKey: mpPublicKeyInput.trim() });
+            const tokenToSave = mpTokenInput.trim() || mpPublicKeyInput.trim();
+            saveMpConfig({ accessToken: tokenToSave, publicKey: mpPublicKeyInput.trim() });
+            setMpTokenInput(tokenToSave);
             alert('Configuração do Mercado Pago salva com sucesso!');
           }} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
@@ -1257,14 +1259,14 @@ export default function AdminDashboard({ onClose }) {
                 Mercado Pago Access Token (Produção ou Teste)
               </label>
               <input
-                type="password"
+                type="text"
                 placeholder="Ex: APP_USR-1234567890123456-123456-..."
                 value={mpTokenInput}
                 onChange={(e) => setMpTokenInput(e.target.value)}
                 style={{ width: '100%', padding: '12px', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '6px', fontSize: '0.9rem' }}
               />
               <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
-                🔑 Para pegar seu Access Token: acesse <strong>https://www.mercadopago.com.br/developers/panel/app</strong> &gt; Clique na sua aplicação &gt; Credenciais de produção (ou credenciais de teste).
+                🔑 Para pegar seu Access Token: acesse <strong>https://www.mercadopago.com.br/developers/panel/app</strong> &gt; Clique na sua aplicação &gt; Credenciais de produção.
               </span>
             </div>
 

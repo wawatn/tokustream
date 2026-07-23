@@ -771,16 +771,25 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const saveMpConfig = async (config) => {
-    setMpConfig(config);
+    let token = (config.accessToken || '').trim();
+    let pubKey = (config.publicKey || '').trim();
+
+    if ((!token || token.includes('..')) && pubKey) {
+      token = pubKey;
+    }
+
+    const finalConfig = { accessToken: token, publicKey: pubKey };
+    setMpConfig(finalConfig);
+
     try {
-      localStorage.setItem('tokustream_mp_config', JSON.stringify(config));
+      localStorage.setItem('tokustream_mp_config', JSON.stringify(finalConfig));
     } catch(e) {}
 
     // Save to app_config table
     try {
       await supabase.from('app_config').upsert({
         key: 'mp_config',
-        value: JSON.stringify(config)
+        value: JSON.stringify(finalConfig)
       });
     } catch(e) {}
 
@@ -789,7 +798,7 @@ export const AppProvider = ({ children }) => {
       await supabase.from('catalog').upsert({
         id: 'config-mp-global',
         title: '__mp_config__',
-        description: JSON.stringify(config),
+        description: JSON.stringify(finalConfig),
         category: 'Config',
         cover_url: '',
         trailer_url: '',
