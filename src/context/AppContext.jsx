@@ -121,56 +121,69 @@ export const AppProvider = ({ children }) => {
           .select('*');
 
         const storedThumbs = getStoredEpThumbnails();
+        setCatalog(prev => {
+          return catData.map(item => {
+            const seriesEpsFromDb = (epData || [])
+              .filter(ep => ep.catalog_id === item.id)
+              .map(ep => {
+                const epNum = parseInt(ep.episode_number, 10) || 1;
+                const seasonNum = parseInt(ep.season_number, 10) || 1;
+                const thumbKey = `${item.id}-s${seasonNum}-ep${epNum}`;
+                const foundThumb = ep.thumbnail_url || ep.thumbnail || storedThumbs[ep.id] || storedThumbs[thumbKey] || storedThumbs[`${item.id}-ep-${epNum}`] || null;
 
-        const formattedCatalog = catData.map(item => {
-          const seriesEps = (epData || [])
-            .filter(ep => ep.catalog_id === item.id)
-            .map(ep => {
-              const epNum = parseInt(ep.episode_number, 10) || 1;
-              const seasonNum = parseInt(ep.season_number, 10) || 1;
-              const thumbKey = `${item.id}-s${seasonNum}-ep${epNum}`;
-              const foundThumb = ep.thumbnail_url || ep.thumbnail || storedThumbs[ep.id] || storedThumbs[thumbKey] || storedThumbs[`${item.id}-ep-${epNum}`] || null;
+                return {
+                  id: ep.id,
+                  number: epNum,
+                  title: ep.title,
+                  youtubeId: ep.video_id,
+                  season: seasonNum,
+                  thumbnail: foundThumb
+                };
+              });
 
-              return {
-                id: ep.id,
-                number: epNum,
-                title: ep.title,
-                youtubeId: ep.video_id,
-                season: seasonNum,
-                thumbnail: foundThumb
-              };
-            })
-            .sort((a, b) => a.number - b.number);
+            const existingSeries = prev.find(s => s.id === item.id);
+            const existingLocalEps = existingSeries ? (existingSeries.episodes || []) : [];
 
-          const epSeasons = seriesEps.map(e => e.season || 1);
-          let seasonsList = [1];
-          if (item.seasons) {
-            if (Array.isArray(item.seasons) && item.seasons.length > 0) {
-              seasonsList = item.seasons;
-            } else if (typeof item.seasons === 'string') {
-              try { seasonsList = JSON.parse(item.seasons); } catch(e){}
+            const mergedMap = new Map();
+            existingLocalEps.forEach(e => {
+              const key = `${e.season || 1}-${e.number}`;
+              mergedMap.set(key, e);
+            });
+            seriesEpsFromDb.forEach(e => {
+              const key = `${e.season || 1}-${e.number}`;
+              mergedMap.set(key, { ...mergedMap.get(key), ...e });
+            });
+
+            const mergedEpisodes = Array.from(mergedMap.values()).sort((a, b) => (a.number || 0) - (b.number || 0));
+
+            const epSeasons = mergedEpisodes.map(e => e.season || 1);
+            let seasonsList = [1];
+            if (item.seasons) {
+              if (Array.isArray(item.seasons) && item.seasons.length > 0) {
+                seasonsList = item.seasons;
+              } else if (typeof item.seasons === 'string') {
+                try { seasonsList = JSON.parse(item.seasons); } catch(e){}
+              }
+            } else {
+              seasonsList = Array.from(new Set([1, ...epSeasons])).sort((a, b) => a - b);
             }
-          } else {
-            seasonsList = Array.from(new Set([1, ...epSeasons])).sort((a, b) => a - b);
-          }
 
-          return {
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            category: item.category,
-            cover: item.cover_url,
-            cover_url: item.cover_url,
-            trailerYoutubeId: item.trailer_url || 'YtD5-Ynfe3Y',
-            type: item.type || 'Série',
-            year: item.year || '2026',
-            rating: item.rating || '9.5',
-            seasons: seasonsList,
-            episodes: seriesEps
-          };
+            return {
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              category: item.category,
+              cover: item.cover_url,
+              cover_url: item.cover_url,
+              trailerYoutubeId: item.trailer_url || 'YtD5-Ynfe3Y',
+              type: item.type || 'Série',
+              year: item.year || '2026',
+              rating: item.rating || '9.5',
+              seasons: seasonsList,
+              episodes: mergedEpisodes
+            };
+          });
         });
-
-        setCatalog(formattedCatalog);
       }
     } catch (err) {
       console.error('Erro ao buscar catálogo no Supabase:', err);
@@ -287,12 +300,14 @@ export const AppProvider = ({ children }) => {
         setCurrentUser(user);
         return { success: true };
       }
-      return { success: false, message: 'E-mail ou senha inválidos.' };
+      return { success: false, message: 'E-mail ou senha incorretos.' };
     }
   };
 
   const logoutUser = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {}
     setCurrentUser(null);
   };
 
@@ -466,17 +481,33 @@ export const AppProvider = ({ children }) => {
       return s;
     }));
 
-    // Insert into Supabase episodes table
+    // Insert into Supabase episodes table gracefully
     try {
-      await supabase.from('episodes').insert({
+      let { error } = await supabase.from('episodes').insert({
         catalog_id: seriesId,
         season_number: seasonNum,
         episode_number: epNum,
         title: episode.title || `Episódio ${epNum}`,
-        video_id: episode.youtubeId || episode.video_id,
+        video_id: episode.youtubeId || episode.video_id || '',
         thumbnail_url: thumb
       });
-      fetchCatalogFromSupabase();
+
+      if (error && error.message && error.message.includes('thumbnail_url')) {
+        const res = await supabase.from('episodes').insert({
+          catalog_id: seriesId,
+          season_number: seasonNum,
+          episode_number: epNum,
+          title: episode.title || `Episódio ${epNum}`,
+          video_id: episode.youtubeId || episode.video_id || ''
+        });
+        error = res.error;
+      }
+
+      if (error) {
+        console.error('Aviso ao salvar episódio no Supabase (mantido localmente):', error);
+      } else {
+        fetchCatalogFromSupabase();
+      }
     } catch (err) {
       console.error('Erro ao salvar episódio no Supabase:', err);
     }
@@ -514,14 +545,29 @@ export const AppProvider = ({ children }) => {
     }));
 
     try {
-      await supabase.from('episodes').update({
-        season_number: updatedEpisode.season ? parseInt(updatedEpisode.season, 10) : 1,
-        episode_number: parseInt(updatedEpisode.number, 10) || 1,
+      let { error } = await supabase.from('episodes').update({
+        season_number: seasonNum,
+        episode_number: epNum,
         title: updatedEpisode.title,
         video_id: updatedEpisode.youtubeId,
-        thumbnail_url: updatedEpisode.thumbnail || null
+        thumbnail_url: thumb
       }).eq('id', episodeId);
-      fetchCatalogFromSupabase();
+
+      if (error && error.message && error.message.includes('thumbnail_url')) {
+        const res = await supabase.from('episodes').update({
+          season_number: seasonNum,
+          episode_number: epNum,
+          title: updatedEpisode.title,
+          video_id: updatedEpisode.youtubeId
+        }).eq('id', episodeId);
+        error = res.error;
+      }
+
+      if (error) {
+        console.error('Aviso ao editar episódio no Supabase (mantido localmente):', error);
+      } else {
+        fetchCatalogFromSupabase();
+      }
     } catch (err) {
       console.error('Erro ao editar episódio no Supabase:', err);
     }
