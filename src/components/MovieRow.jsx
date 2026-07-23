@@ -57,7 +57,7 @@ export default function MovieRow({ title, items, onOpenDetail }) {
                     <span className="post-ql">
                       <span className="Qlty">HD</span>
                     </span>
-                    <span className="year">2026</span>
+                    <span className="year">{item.year || '2026'}</span>
                     <span className="watch btn sm">Assistir</span>
                     <span className="play fa-play" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Play size={18} fill="#fff" style={{ marginLeft: '3px' }} />

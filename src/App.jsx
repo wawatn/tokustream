@@ -33,17 +33,23 @@ export default function App() {
   const featured = catalog[0] || null;
 
   // Curated list of all categories in database
-  const categories = ['Todos', ...new Set(catalog.map(item => item.category))];
+  const allDbCategories = catalog.flatMap(item => item.categories || (item.category ? item.category.split(',').map(c => c.trim()) : []));
+  const categories = ['Todos', ...new Set(allDbCategories.filter(Boolean))];
 
   // Get user's favorites catalog objects
   const favoriteItems = catalog.filter(item => myList.includes(item.id));
 
-  // Filter catalog based on search
+  // Filter catalog based on search & category tab
   const filteredCatalog = catalog.filter(item => {
-    return searchQuery
+    const itemCats = item.categories || (item.category ? item.category.split(',').map(c => c.trim()) : []);
+    const matchesSearch = searchQuery
       ? item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.category.toLowerCase().includes(searchQuery.toLowerCase())
+        itemCats.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
       : true;
+
+    const matchesCategory = selectedCategoryTab === 'Todos' || itemCats.includes(selectedCategoryTab) || item.category === selectedCategoryTab;
+
+    return matchesSearch && matchesCategory;
   });
 
   return (
@@ -148,7 +154,7 @@ export default function App() {
                                 <span className="post-ql">
                                   <span className="Qlty">HD</span>
                                 </span>
-                                <span className="year">2026</span>
+                                <span className="year">{item.year || '2026'}</span>
                                 <span className="watch btn sm">Assistir</span>
                                 <span className="play fa-play" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   <Play size={18} fill="#fff" style={{ marginLeft: '3px' }} />

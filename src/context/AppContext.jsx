@@ -168,11 +168,15 @@ export const AppProvider = ({ children }) => {
               seasonsList = Array.from(new Set([1, ...epSeasons])).sort((a, b) => a - b);
             }
 
+            const catStr = item.category || 'Ação';
+            const catList = catStr.includes(',') ? catStr.split(',').map(c => c.trim()).filter(Boolean) : [catStr.trim()];
+
             return {
               id: item.id,
               title: item.title,
               description: item.description,
-              category: item.category,
+              category: catList[0] || 'Ação',
+              categories: catList,
               cover: item.cover_url,
               cover_url: item.cover_url,
               trailerYoutubeId: item.trailer_url || 'YtD5-Ynfe3Y',
@@ -412,11 +416,22 @@ export const AppProvider = ({ children }) => {
 
   const addSeries = async (series) => {
     const safeId = `${series.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`;
+    const catStr = Array.isArray(series.categories) 
+      ? series.categories.join(', ') 
+      : (series.category || 'Ação');
+    const catList = Array.isArray(series.categories) 
+      ? series.categories 
+      : (catStr.includes(',') ? catStr.split(',').map(c => c.trim()).filter(Boolean) : [catStr.trim()]);
+
     const newSeries = {
       ...series,
       id: safeId,
+      category: catList[0] || 'Ação',
+      categories: catList,
       cover: series.cover || series.cover_url,
+      cover_url: series.cover || series.cover_url,
       type: series.type || 'Série',
+      year: series.year || '2026',
       seasons: series.type === 'Série' ? [1] : [],
       trailerYoutubeId: series.trailerYoutubeId || 'YtD5-Ynfe3Y',
       episodes: []
@@ -429,7 +444,7 @@ export const AppProvider = ({ children }) => {
       await supabase.from('catalog').insert({
         title: series.title,
         description: series.description,
-        category: series.category,
+        category: catStr,
         cover_url: series.cover || series.cover_url,
         trailer_url: series.trailerYoutubeId,
         type: series.type || 'Série',
@@ -442,6 +457,50 @@ export const AppProvider = ({ children }) => {
     }
 
     return safeId;
+  };
+
+  const editSeries = async (seriesId, updatedData) => {
+    const catStr = Array.isArray(updatedData.categories) 
+      ? updatedData.categories.join(', ') 
+      : (updatedData.category || 'Ação');
+    const catList = Array.isArray(updatedData.categories) 
+      ? updatedData.categories 
+      : (catStr.includes(',') ? catStr.split(',').map(c => c.trim()).filter(Boolean) : [catStr.trim()]);
+
+    setCatalog(prev => prev.map(s => {
+      if (s.id === seriesId) {
+        return {
+          ...s,
+          title: updatedData.title,
+          description: updatedData.description,
+          category: catList[0] || 'Ação',
+          categories: catList,
+          cover: updatedData.cover || updatedData.cover_url,
+          cover_url: updatedData.cover || updatedData.cover_url,
+          trailerYoutubeId: updatedData.trailerYoutubeId || s.trailerYoutubeId,
+          type: updatedData.type || s.type || 'Série',
+          year: updatedData.year || '2026',
+          rating: updatedData.rating || '9.5'
+        };
+      }
+      return s;
+    }));
+
+    try {
+      await supabase.from('catalog').update({
+        title: updatedData.title,
+        description: updatedData.description,
+        category: catStr,
+        cover_url: updatedData.cover || updatedData.cover_url,
+        trailer_url: updatedData.trailerYoutubeId,
+        type: updatedData.type || 'Série',
+        year: updatedData.year || '2026',
+        rating: updatedData.rating || '9.5'
+      }).eq('id', seriesId);
+      fetchCatalogFromSupabase();
+    } catch (err) {
+      console.error('Erro ao editar série no Supabase:', err);
+    }
   };
 
   const deleteSeries = async (seriesId) => {
@@ -665,6 +724,7 @@ export const AppProvider = ({ children }) => {
       unlockEpisode,
       isEpisodeUnlocked,
       addSeries,
+      editSeries,
       deleteSeries,
       addEpisode,
       editEpisode,

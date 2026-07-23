@@ -12,7 +12,7 @@ const SUGGESTED_COVERS = [
 ];
 
 export default function AdminDashboard({ onClose }) {
-  const { catalog, addSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason, deleteSeason } = useContext(AppContext);
+  const { catalog, addSeries, editSeries, deleteSeries, addEpisode, editEpisode, deleteEpisode, users, transactions, categories, addCategory, deleteCategory, addSeason, deleteSeason } = useContext(AppContext);
   const [activeTab, setActiveTab] = useState('content'); // 'content' | 'categories' | 'metrics'
   const [contentSubTab, setContentSubTab] = useState('list'); // 'list' | 'add'
   const [selectedSeriesId, setSelectedSeriesId] = useState(null);
@@ -21,11 +21,13 @@ export default function AdminDashboard({ onClose }) {
   const [adminSearchQuery, setAdminSearchQuery] = useState('');
   const [catalogFilter, setCatalogFilter] = useState('all'); // 'all' | 'Série' | 'Filme'
 
-  // New series state
+  // New / Edit series state
+  const [editingSeriesId, setEditingSeriesId] = useState(null);
   const [newSeriesTitle, setNewSeriesTitle] = useState('');
   const [newSeriesDesc, setNewSeriesDesc] = useState('');
   const [newSeriesType, setNewSeriesType] = useState('Série'); // 'Série' | 'Filme'
-  const [newSeriesCategory, setNewSeriesCategory] = useState(categories[0] || 'Drama');
+  const [newSeriesYear, setNewSeriesYear] = useState('2026');
+  const [newSeriesCategories, setNewSeriesCategories] = useState(categories && categories.length > 0 ? [categories[0]] : ['Drama']);
   const [newSeriesCover, setNewSeriesCover] = useState('');
   const [newSeriesTrailer, setNewSeriesTrailer] = useState('');
 
@@ -112,6 +114,21 @@ export default function AdminDashboard({ onClose }) {
     return (match && match[2].length === 11) ? match[2] : urlOrId;
   };
 
+  const handleStartEditSeries = (series) => {
+    setEditingSeriesId(series.id);
+    setNewSeriesTitle(series.title || '');
+    setNewSeriesDesc(series.description || '');
+    setNewSeriesType(series.type || 'Série');
+    setNewSeriesYear(series.year || '2026');
+    setNewSeriesCover(series.cover || series.cover_url || '');
+    setNewSeriesTrailer(series.trailerYoutubeId || '');
+    
+    const cats = series.categories || (series.category ? series.category.split(',').map(c => c.trim()) : [categories[0]]);
+    setNewSeriesCategories(cats.length > 0 ? cats : [categories[0]]);
+    
+    setContentSubTab('add');
+  };
+
   const handleAddSeries = (e) => {
     e.preventDefault();
     if (!newSeriesTitle || !newSeriesDesc) return;
@@ -119,23 +136,38 @@ export default function AdminDashboard({ onClose }) {
     const coverUrl = newSeriesCover || 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=800&auto=format&fit=crop&q=80';
     const trailerId = extractYoutubeId(newSeriesTrailer);
     
-    const newId = addSeries({
-      title: newSeriesTitle,
-      description: newSeriesDesc,
-      category: newSeriesCategory,
-      type: newSeriesType,
-      cover: coverUrl,
-      trailerYoutubeId: trailerId || 'YtD5-Ynfe3Y'
-    });
+    if (editingSeriesId) {
+      editSeries(editingSeriesId, {
+        title: newSeriesTitle,
+        description: newSeriesDesc,
+        categories: newSeriesCategories,
+        type: newSeriesType,
+        year: newSeriesYear || '2026',
+        cover: coverUrl,
+        trailerYoutubeId: trailerId || 'YtD5-Ynfe3Y'
+      });
+      alert('Série/Filme atualizado com sucesso!');
+      setEditingSeriesId(null);
+    } else {
+      const newId = addSeries({
+        title: newSeriesTitle,
+        description: newSeriesDesc,
+        categories: newSeriesCategories,
+        type: newSeriesType,
+        year: newSeriesYear || '2026',
+        cover: coverUrl,
+        trailerYoutubeId: trailerId || 'YtD5-Ynfe3Y'
+      });
+      setSelectedSeriesId(newId);
+      alert('Conteúdo cadastrado com sucesso!');
+    }
 
     setNewSeriesTitle('');
     setNewSeriesDesc('');
     setNewSeriesCover('');
     setNewSeriesTrailer('');
-    alert('Conteúdo cadastrado com sucesso!');
-    
-    // Auto-select the newly added content and redirect to Catalog tab
-    setSelectedSeriesId(newId);
+    setNewSeriesYear('2026');
+    setNewSeriesCategories([categories[0] || 'Drama']);
     setContentSubTab('list');
   };
 
@@ -429,7 +461,7 @@ export default function AdminDashboard({ onClose }) {
                               }}>
                                 {series.type || 'Série'}
                               </span>
-                              • {series.category} • {series.episodes?.length || 0} vídeos
+                              • {series.year || '2026'} • {Array.isArray(series.categories) ? series.categories.join(', ') : (series.category || 'Gênero')} • {series.episodes?.length || 0} vídeos
                             </span>
                           </div>
                         </div>
@@ -449,6 +481,25 @@ export default function AdminDashboard({ onClose }) {
                             {selectedSeriesId === series.id ? 'Fechar' : (series.type === 'Filme' ? 'Gerenciar Vídeo' : 'Gerenciar Episódios')}
                           </button>
                           <button
+                            onClick={() => handleStartEditSeries(series)}
+                            style={{
+                              padding: '6px 10px',
+                              background: 'rgba(0, 240, 255, 0.1)',
+                              border: '1px solid var(--color-neon-cyan)',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              color: 'var(--color-neon-cyan)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '0.8rem'
+                            }}
+                            title="Editar Série/Filme"
+                          >
+                            <Edit3 size={14} />
+                            Editar
+                          </button>
+                          <button
                             onClick={() => {
                               if (confirm(`Tem certeza que deseja deletar "${series.title}"?`)) {
                                 deleteSeries(series.id);
@@ -463,6 +514,7 @@ export default function AdminDashboard({ onClose }) {
                               cursor: 'pointer',
                               color: 'var(--color-danger)'
                             }}
+                            title="Excluir Série/Filme"
                           >
                             <Trash size={16} />
                           </button>
@@ -474,12 +526,12 @@ export default function AdminDashboard({ onClose }) {
               </div>
             )}
 
-            {/* View 2: Add New Content Form Subtab */}
+            {/* View 2: Add / Edit Content Form Subtab */}
             {contentSubTab === 'add' && (
               <div className="glass" style={{ padding: '30px', borderRadius: '12px', maxWidth: '700px', margin: '0 auto', width: '100%' }}>
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Plus size={20} color="var(--color-neon-cyan)" />
-                  Cadastrar Série ou Filme
+                  {editingSeriesId ? <Edit3 size={20} color="var(--color-neon-cyan)" /> : <Plus size={20} color="var(--color-neon-cyan)" />}
+                  {editingSeriesId ? 'Editar Série ou Filme' : 'Cadastrar Série ou Filme'}
                 </h3>
 
                 <form onSubmit={handleAddSeries} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -523,33 +575,74 @@ export default function AdminDashboard({ onClose }) {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Título</label>
-                    <input
-                      type="text"
-                      placeholder="Ex: Kamen Rider Black RX"
-                      value={newSeriesTitle}
-                      onChange={(e) => setNewSeriesTitle(e.target.value)}
-                      required
-                    />
+                  {/* Title & Release Year Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Título</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Kamen Rider Black RX"
+                        value={newSeriesTitle}
+                        onChange={(e) => setNewSeriesTitle(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Ano</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: 2026"
+                        value={newSeriesYear}
+                        onChange={(e) => setNewSeriesYear(e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
 
+                  {/* Multi-Category Selector */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Categoria / Gênero</label>
+                    <label style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Categorias / Gêneros (Selecione uma ou mais)</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-neon-cyan)', fontWeight: 'bold' }}>{newSeriesCategories.length} selecionada(s)</span>
+                    </label>
                     {categories.length === 0 ? (
                       <div style={{ color: 'var(--color-danger)', fontSize: '0.85rem', fontStyle: 'italic' }}>
                         Crie primeiro uma categoria na aba "Categorias" para poder associar ao conteúdo!
                       </div>
                     ) : (
-                      <select
-                        value={newSeriesCategory}
-                        onChange={(e) => setNewSeriesCategory(e.target.value)}
-                        style={{ width: '100%', padding: '10px', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--glass-border)', borderRadius: '6px' }}
-                      >
-                        {categories.map((cat) => (
-                          <option key={cat} value={cat}>{cat}</option>
-                        ))}
-                      </select>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--glass-border)' }}>
+                        {categories.map((cat) => {
+                          const isSelected = newSeriesCategories.includes(cat);
+                          return (
+                            <button
+                              key={cat}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  if (newSeriesCategories.length > 1) {
+                                    setNewSeriesCategories(newSeriesCategories.filter(c => c !== cat));
+                                  }
+                                } else {
+                                  setNewSeriesCategories([...newSeriesCategories, cat]);
+                                }
+                              }}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '16px',
+                                fontSize: '0.8rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                background: isSelected ? 'rgba(0, 240, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                                border: `1px solid ${isSelected ? 'var(--color-neon-cyan)' : 'var(--glass-border)'}`,
+                                color: isSelected ? 'var(--color-neon-cyan)' : '#fff',
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              {isSelected ? '✓ ' : '+ '}{cat}
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
 
@@ -635,27 +728,55 @@ export default function AdminDashboard({ onClose }) {
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={categories.length === 0}
-                    style={{
-                      background: 'linear-gradient(45deg, #00f0ff, #a300ff)',
-                      color: '#fff',
-                      padding: '12px',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      boxShadow: '0 0 15px rgba(0, 240, 255, 0.3)',
-                      opacity: categories.length === 0 ? 0.5 : 1
-                    }}
-                  >
-                    <Plus size={18} />
-                    Adicionar Conteúdo & Continuar Edição
-                  </button>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      type="submit"
+                      disabled={categories.length === 0}
+                      style={{
+                        flex: 1,
+                        background: 'linear-gradient(45deg, #00f0ff, #a300ff)',
+                        color: '#fff',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        cursor: 'pointer',
+                        boxShadow: '0 0 15px rgba(0, 240, 255, 0.3)'
+                      }}
+                    >
+                      {editingSeriesId ? <Edit3 size={18} /> : <Plus size={18} />}
+                      {editingSeriesId ? 'Salvar Alterações da Série' : 'Cadastrar Conteúdo'}
+                    </button>
+                    {editingSeriesId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingSeriesId(null);
+                          setNewSeriesTitle('');
+                          setNewSeriesDesc('');
+                          setNewSeriesCover('');
+                          setNewSeriesTrailer('');
+                          setNewSeriesYear('2026');
+                          setNewSeriesCategories([categories[0] || 'Drama']);
+                          setContentSubTab('list');
+                        }}
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '6px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid var(--glass-border)',
+                          color: '#fff',
+                          fontWeight: 'bold',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
             )}

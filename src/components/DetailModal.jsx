@@ -740,17 +740,31 @@ export default function DetailModal({ item, onClose, onRequireAuth, onRequireSho
               }}>
                 <div style={{ zIndex: 10, maxWidth: '550px' }}>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
+                    {(item.categories || (item.category ? item.category.split(',').map(c => c.trim()) : ['Dorama'])).map(cat => (
+                      <span key={cat} style={{
+                        background: 'rgba(254, 0, 0, 0.2)',
+                        border: '1px solid var(--color-primary-red)',
+                        color: 'var(--color-primary-red)',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase'
+                      }}>
+                        {cat}
+                      </span>
+                    ))}
+                    
                     <span style={{
-                      background: 'rgba(254, 0, 0, 0.2)',
-                      border: '1px solid var(--color-primary-red)',
-                      color: 'var(--color-primary-red)',
-                      padding: '2px 6px',
+                      background: 'rgba(0, 240, 255, 0.1)',
+                      border: '1px solid var(--color-neon-cyan)',
+                      color: 'var(--color-neon-cyan)',
+                      padding: '2px 8px',
                       borderRadius: '4px',
-                      fontSize: '0.7rem',
-                      fontWeight: 'bold',
-                      textTransform: 'uppercase'
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
                     }}>
-                      {item.category}
+                      📅 {item.year || '2026'}
                     </span>
                     
                     {currentUser && (
