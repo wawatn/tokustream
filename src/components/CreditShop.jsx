@@ -85,17 +85,11 @@ export default function CreditShop({ onClose }) {
       if (mpConfig?.accessToken && selectedPack) {
         // Real Mercado Pago Flow
         generateRealPixPayment(selectedPack);
-      } else {
-        // Auto-approve after 8 seconds for simulation mode if no MP access token
-        autoApproveRef.current = setTimeout(() => {
-          handleSuccessApprove();
-        }, 8000);
       }
     }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (autoApproveRef.current) clearTimeout(autoApproveRef.current);
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, [step, paymentMethod, selectedPack]);
@@ -465,6 +459,12 @@ export default function CreditShop({ onClose }) {
                   </div>
                 </div>
 
+                {!mpConfig?.accessToken && (
+                  <div style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(255, 170, 0, 0.1)', border: '1px solid #ffaa00', color: '#ffaa00', fontSize: '0.8rem', textAlign: 'center', width: '100%' }}>
+                    💡 <strong>Atenção:</strong> Cole seu <strong>Access Token</strong> no Painel Admin &gt; Pagamentos 💳 para gerar o QR Code PIX oficial da sua conta!
+                  </div>
+                )}
+
                 <div style={{
                   display: 'flex',
                   gap: '12px',
@@ -488,22 +488,62 @@ export default function CreditShop({ onClose }) {
                   >
                     Voltar
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSuccessApprove}
-                    className="btn-fire-glow"
-                    style={{
-                      flex: 1.2,
-                      background: 'linear-gradient(45deg, var(--color-secondary-red), var(--color-primary-red))',
-                      color: '#fff',
-                      padding: '12px',
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      boxShadow: '0 0 15px rgba(254, 0, 0, 0.3)'
-                    }}
-                  >
-                    Simular Confirmação
-                  </button>
+                  
+                  {mpConfig?.accessToken ? (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (paymentId) {
+                          try {
+                            const res = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+                              headers: { 'Authorization': `Bearer ${mpConfig.accessToken}` }
+                            });
+                            const data = await res.json();
+                            if (data.status === 'approved') {
+                              handleSuccessApprove();
+                            } else {
+                              alert(`Status do pagamento: ${data.status || 'pendente'}. Pague o PIX pelo seu app bancário para liberar os créditos.`);
+                            }
+                          } catch(e) {
+                            alert('Aguardando confirmação do banco...');
+                          }
+                        }
+                      }}
+                      style={{
+                        flex: 1.2,
+                        background: 'linear-gradient(45deg, var(--color-neon-cyan), var(--color-neon-violet))',
+                        color: '#fff',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <RefreshCw size={16} />
+                      Já paguei (Verificar)
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSuccessApprove}
+                      style={{
+                        flex: 1.2,
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid var(--glass-border)',
+                        color: '#fff',
+                        padding: '12px',
+                        borderRadius: '6px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Simular Confirmação (Teste)
+                    </button>
+                  )}
                 </div>
               </div>
             )}

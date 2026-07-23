@@ -737,10 +737,29 @@ export const AppProvider = ({ children }) => {
     }
   });
 
-  const saveMpConfig = (config) => {
+  useEffect(() => {
+    supabase.from('app_config').select('*').eq('key', 'mp_config').single()
+      .then(({ data }) => {
+        if (data && data.value) {
+          try {
+            const parsed = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+            if (parsed && parsed.accessToken) {
+              setMpConfig(parsed);
+              localStorage.setItem('tokustream_mp_config', JSON.stringify(parsed));
+            }
+          } catch(e) {}
+        }
+      }).catch(() => {});
+  }, []);
+
+  const saveMpConfig = async (config) => {
     setMpConfig(config);
     try {
       localStorage.setItem('tokustream_mp_config', JSON.stringify(config));
+      await supabase.from('app_config').upsert({
+        key: 'mp_config',
+        value: JSON.stringify(config)
+      });
     } catch(e) {}
   };
 
