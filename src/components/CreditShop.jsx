@@ -173,14 +173,17 @@ export default function CreditShop({ onClose }) {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1000,
-      backdropFilter: 'blur(8px)'
+      backdropFilter: 'blur(8px)',
+      padding: '16px'
     }}>
       <div 
         className="glass"
         style={{
           width: '100%',
-          maxWidth: '520px',
-          padding: '40px',
+          maxWidth: '500px',
+          maxHeight: '92vh',
+          overflowY: 'auto',
+          padding: '24px 28px',
           borderRadius: '12px',
           position: 'relative',
           boxShadow: '0 0 30px rgba(254, 0, 0, 0.2)'
@@ -188,9 +191,9 @@ export default function CreditShop({ onClose }) {
       >
         <button 
           onClick={onClose} 
-          style={{ position: 'absolute', top: '20px', right: '20px', color: 'var(--color-text-secondary)' }}
+          style={{ position: 'absolute', top: '16px', right: '16px', color: 'var(--color-text-secondary)', background: 'none', border: 'none', cursor: 'pointer', zIndex: 10 }}
         >
-          <X size={24} />
+          <X size={22} />
         </button>
 
         {step === 'select' && (
@@ -364,19 +367,19 @@ export default function CreditShop({ onClose }) {
               </form>
             ) : (
               /* Pix Component */
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '10px 0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '4px 0' }}>
                 
                 {mpLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px' }}>
-                    <RefreshCw size={32} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite', color: 'var(--color-neon-cyan)' }} />
-                    <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>Gerando QR Code PIX no Mercado Pago...</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '20px' }}>
+                    <RefreshCw size={28} className="animate-spin" style={{ animation: 'spin 1.5s linear infinite', color: 'var(--color-neon-cyan)' }} />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>Gerando QR Code PIX no Mercado Pago...</span>
                   </div>
                 ) : (
                   /* Visual QR Code (Mercado Pago ou Mockup) */
                   <div style={{
-                    padding: '16px',
+                    padding: '10px',
                     background: '#ffffff',
-                    borderRadius: '12px',
+                    borderRadius: '10px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -387,11 +390,11 @@ export default function CreditShop({ onClose }) {
                       <img
                         src={`data:image/png;base64,${realQrCodeBase64}`}
                         alt="QR Code PIX Mercado Pago"
-                        style={{ width: '180px', height: '180px', display: 'block' }}
+                        style={{ width: '150px', height: '150px', display: 'block' }}
                       />
                     ) : (
                       /* Styled Mockup QR Code grid blocks */
-                      <svg width="180" height="180" viewBox="0 0 180 180" style={{ shapeRendering: 'crispEdges' }}>
+                      <svg width="150" height="150" viewBox="0 0 180 180" style={{ shapeRendering: 'crispEdges' }}>
                         <rect width="180" height="180" fill="white" />
                         <rect x="10" y="10" width="50" height="50" fill="black" />
                         <rect x="20" y="20" width="30" height="30" fill="white" />
